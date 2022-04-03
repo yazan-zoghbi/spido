@@ -1,5 +1,5 @@
 {
-  "name": "@yazan.zoghbi/seo-crawler",
+  "name": "spidra",
   "version": "1.0.0",
   "description": "A crawler that crawls the site's internal links, fetching information of interest to any SEO specialist to perform appropriate analysis on the site.",
   "main": "crawler.js",
@@ -28,12 +28,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Yazan-Zed/seo-crawler.git"
+    "url": "git+https://github.com/yazan-zoghbi/seo-crawler.git"
   },
   "author": "Yazan Zoghbi",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Yazan-Zed/seo-crawler/issues"
+    "url": "https://github.com/yazan-zoghbi/seo-crawler/issues"
   },
-  "homepage": "https://github.com/Yazan-Zed/seo-crawler#readme"
+  "homepage": "https://github.com/yazan-zoghbi/seo-crawler#readme"
 }
