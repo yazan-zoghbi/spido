@@ -1,0 +1,15 @@
+{
+  "name": "seo-crawler",
+  "version": "1.0.0",
+  "description": "A crawler that crawls the site's internal links, fetching information of interest to any SEO specialist to perform appropriate analysis on the site.",
+  "main": "crawler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Yazan.Zoghbi",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.26.1",
+    "cheerio": "^1.0.0-rc.10"
+  }
+}
