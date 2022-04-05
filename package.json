@@ -35,5 +35,9 @@
   "bugs": {
     "url": "https://github.com/yazan-zoghbi/spido/issues"
   },
-  "homepage": "https://github.com/yazan-zoghbi/spido#readme"
+  "homepage": "https://github.com/yazan-zoghbi/spido#readme",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  }
 }
