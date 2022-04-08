@@ -30,6 +30,13 @@
     "type": "git",
     "url": "git+https://github.com/yazan-zoghbi/spido.git"
   },
+  "keywords": [
+    "SEO",
+    "Crawler",
+    "Spider",
+    "nodejs",
+    "node"
+  ],
   "author": "Yazan Zoghbi",
   "license": "MIT",
   "bugs": {
