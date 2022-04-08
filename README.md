@@ -1,7 +1,6 @@
 ![npm](https://img.shields.io/npm/v/spido)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
-
 ## Overview 📝
 
 It is a module that crawls sites and extracts basic information on any web page of interest to site owners in general, and SEO specialists in particular, which enables them to use that information in analyzing the efficiency and performance of their site in search engines.
