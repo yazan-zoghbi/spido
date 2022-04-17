@@ -1,17 +1,50 @@
-const Spido = require("../lib/crawler");
+const dotenv = require("dotenv").config();
+const Spido = require("../index");
+const url = process.env.URL;
 
-//define fetch terminal command line argument and if it's provided use crawler fetch method
-//define url argument name -u and if it's provided use crawler crawl method
+//testing return html from url with crawler
+test("get html from url", async () => {
+  const crawler = new Spido(url);
+  const html = await crawler.getHTML(url);
+  expect(html).toBeDefined();
+  expect(html.length).toBeGreaterThan(0);
+});
 
-const urlArg = process.argv[2] === "-u";
-const url = process.argv[urlArg ? 3 : 2];
-console.log(urlArg + ": " + url);
-if (urlArg && url) {
-  const c = new Spido(url);
-  const response = c.fetch(url);
-  response.then((data) => {
-    console.log(data);
+//testing return seo data from url with crawler
+test("get seo data from url", async () => {
+  const crawler = new Spido(url);
+  const html = await crawler.getHTML(url);
+  const seoData = await crawler.getSeoData(url);
+  expect(seoData).toBeDefined();
+
+  //test if seo data is an object with properties types and values are strings
+  expect(seoData).toMatchObject({
+    title: expect.any(String),
+    description: expect.any(String),
+    canonical: expect.any(String),
+    robots: expect.any(String),
+    links: expect.any(Number),
   });
-} else {
-  console.log("invalid arguments! please consider using -u <url>");
-}
+
+  //test loop if all seo data object properties are defined and have values
+  for (let property in seoData) {
+    expect(seoData[property]).toBeDefined();
+  }
+});
+
+//testing return links from html with crawler
+test("get links from html", async () => {
+  const crawler = new Spido(url);
+  const html = await crawler.getHTML(url);
+  const links = await crawler.getLinks(html);
+  expect(links).toBeDefined();
+  expect(links.length).toBeGreaterThan(0);
+});
+
+//testing return hostname from url with crawler
+test("get hostname from url", async () => {
+  const crawler = new Spido(url);
+  const hostname = await crawler.getHostname(url);
+  expect(hostname).toBeDefined();
+  expect(hostname.length).toBeGreaterThan(0);
+});
