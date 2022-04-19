@@ -12,7 +12,7 @@ It is a module that crawls sites and extracts basic information on any web page 
 
 ## Installation 📦
 
-`npm install spido --save`  or  `yarn add spido`
+`npm install spido --save` or `yarn add spido`
 
 ## Usage ⌨️
 
@@ -21,7 +21,7 @@ used independently within the CLI.
 
 ### API 📡
 
-spido can be used as a Node.js module, which can return the SEO information in JSON format.
+Spido can be used as a Node.js module, which can return the SEO information in JSON format.
 
 - fetch: Fetches the SEO information from a single web page.
 
@@ -55,18 +55,17 @@ spido.crawl(url, (err, data) => {
 
 spido can be used as a command line tool, which can return the SEO information and print it on the console.
 
-- fetch: ``spido -u <url> -f``
+- fetch: `spido -u <url> -f`
 
 ```
 $ spido -u https://www.example.com -f
 ```
 
-- crawl: ``spido -u <url> -c``
+- crawl: `spido -u <url> -c`
 
 ```
 $ spido -u https://www.example.com -c
 ```
-
 
 ## Bug Fixes 🐛
 
