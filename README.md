@@ -55,16 +55,16 @@ spido.crawl(url, (err, data) => {
 
 spido can be used as a command line tool, which can return the SEO information and print it on the console.
 
-- fetch: `spido -u <url> -f`
+- fetch: `spido fetch <url>`
 
 ```
-$ spido -u https://www.example.com -f
+$ spido fetch https://www.example.com
 ```
 
-- crawl: `spido -u <url> -c`
+- crawl: `spido crawl <url>`
 
 ```
-$ spido -u https://www.example.com -c
+$ spido crawl https://www.example.com
 ```
 
 ## Bug Fixes 🐛
@@ -75,7 +75,6 @@ $ spido -u https://www.example.com -c
 
 - Extract the information and save it to a JSON file
 - Limit the number of links that can be crawled in a website
-- Fully embedding with CLI
 - The ability to use as a docker image
 
 ## Links 🔗
