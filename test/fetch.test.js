@@ -1,10 +1,14 @@
 const dotenv = require("dotenv").config();
-const Spido = require("../index");
+const Spido = require("..");
 const url = process.env.URL;
+
+//before Each test define a new crawler instance
+beforeEach(() => {
+  crawler = new Spido(url);
+});
 
 //testing return html from url with crawler
 test("get html from url", async () => {
-  const crawler = new Spido(url);
   const html = await crawler.getHTML(url);
   expect(html).toBeDefined();
   expect(html.length).toBeGreaterThan(0);
@@ -12,7 +16,6 @@ test("get html from url", async () => {
 
 //testing return seo data from url with crawler
 test("get seo data from url", async () => {
-  const crawler = new Spido(url);
   const html = await crawler.getHTML(url);
   const seoData = await crawler.getSeoData(url);
   expect(seoData).toBeDefined();
@@ -34,7 +37,6 @@ test("get seo data from url", async () => {
 
 //testing return links from html with crawler
 test("get links from html", async () => {
-  const crawler = new Spido(url);
   const html = await crawler.getHTML(url);
   const links = await crawler.getLinks(html);
   expect(links).toBeDefined();
@@ -43,7 +45,6 @@ test("get links from html", async () => {
 
 //testing return hostname from url with crawler
 test("get hostname from url", async () => {
-  const crawler = new Spido(url);
   const hostname = await crawler.getHostname(url);
   expect(hostname).toBeDefined();
   expect(hostname.length).toBeGreaterThan(0);
