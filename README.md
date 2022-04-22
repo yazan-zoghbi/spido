@@ -69,7 +69,11 @@ $ spido crawl https://www.example.com
 
 ## Bug Fixes 🐛
 
-- Nothing yet
+### v1.1.3:
+
+- Fixed: `spido crawl` command line tool.
+
+- Fixed: handle errors when defining the crawler options.
 
 ## TODO 🛠
 
