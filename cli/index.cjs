@@ -20,6 +20,10 @@ program
   .description("crawl the website")
   .action(async (url, options) => {
     const crawler = new Spido(url);
+    crawler.options = {
+      internalLinks: false,
+      sitemap: false,
+    };
 
     if (options.sitemap) {
       crawler.options.sitemap = true;
@@ -34,7 +38,11 @@ program
       throw new Error("invalid arguments! please consider using -s | -i");
     }
 
-    await crawler.crawl();
+    console.log(crawler.options);
+    await crawler.crawl().then(() => {
+      const seoData = crawler.websiteSeoData;
+      console.log(seoData);
+    });
   });
 
 program
