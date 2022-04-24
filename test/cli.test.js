@@ -4,6 +4,7 @@ const path = require("path");
 const exec = require("child_process").exec;
 
 const URL = process.env.URL;
+jest.setTimeout(60000);
 
 //test cli - crawling process with default options
 test("crawling process with default options", async () => {
