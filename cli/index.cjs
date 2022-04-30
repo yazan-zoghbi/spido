@@ -3,7 +3,7 @@
 const { program } = require("commander");
 
 const Spido = require("..");
-const utils = require("../lib/utils.cjs");
+const utils = require("../lib/core/utils.cjs");
 
 program
   .name("spido")
@@ -73,5 +73,3 @@ program
   });
 
 program.parse(process.argv);
-
-module.exports = Spido;
