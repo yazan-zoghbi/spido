@@ -3,6 +3,7 @@
 const { program } = require("commander");
 
 const Spido = require("..");
+const utils = require("../lib/core/utils.cjs");
 
 program
   .name("spido")
@@ -10,7 +11,7 @@ program
   .usage("<command>")
   .addHelpCommand(true)
   .helpOption(true)
-  .version("1.1.2");
+  .version(require("../package.json").version);
 
 program
   .command("crawl")
@@ -20,6 +21,10 @@ program
   .description("crawl the website")
   .action(async (url, options) => {
     const crawler = new Spido(url);
+    crawler.options = {
+      internalLinks: false,
+      sitemap: false,
+    };
 
     if (options.sitemap) {
       crawler.options.sitemap = true;
@@ -34,7 +39,11 @@ program
       throw new Error("invalid arguments! please consider using -s | -i");
     }
 
-    await crawler.crawl();
+    console.log(crawler.options);
+    await crawler.crawl().then(() => {
+      const seoData = crawler.websiteSeoData;
+      console.log(seoData);
+    });
   });
 
 program
@@ -47,6 +56,20 @@ program
     console.log(data);
   });
 
-program.parse(process.argv);
+program
+  .command("sitemap")
+  .argument("<url>", "the url of website you'd like to generate sitemap for")
+  .option("-p <path>", "the path to save sitemap to")
+  .description("generate sitemap for website")
+  .action(async (url, options) => {
+    console.log(url, options.p);
+    if (!options.p) {
+      const sitemap = await utils.sitemapGenerator(url);
+      console.log(sitemap);
+    } else if (options.p) {
+      const sitemap = await utils.sitemapGenerator(url, options.p);
+      console.log(sitemap);
+    }
+  });
 
-module.exports = Spido;
+program.parse(process.argv);

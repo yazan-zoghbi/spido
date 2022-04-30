@@ -52,3 +52,10 @@ test("crawl website with sitemap enabled", async () => {
   expect(crawler.visited.size).toBeGreaterThan(0);
   expect(crawler.queue.urls.length).toBe(0);
 });
+
+//test return seo data for crawled links
+test("get seo data for crawled links", async () => {
+  await crawler.crawl();
+  const seoData = crawler.websiteSeoData;
+  expect(seoData).toBeDefined();
+});
