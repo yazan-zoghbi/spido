@@ -5,7 +5,7 @@
 const xmlSiteMapGenerator = require("../xml-sitemap-generator.cjs");
 
 module.exports = {
-  sitemapGenerator: async (url, path) => {
+  sitemapGenerator: async (url: string, path: string) => {
     const sitemapLinksSet = await xmlSiteMapGenerator.sitemapLinksGenerator(
       url
     );

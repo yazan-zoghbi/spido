@@ -1,5 +1,4 @@
-const dotenv = require("dotenv").config();
-const { test } = require("@jest/globals");
+import "dotenv/config";
 const path = require("path");
 const exec = require("child_process").exec;
 
@@ -20,7 +19,7 @@ test("crawling process with sitemap enabled", async () => {
 
 //test cli - fetching data from url
 test("fetching data from url", async () => {
-  const output = await cli("fetch");
+  const output = await cli("fetch", null);
   expect(output).toMatch("title");
   expect(output).toMatch("description");
   expect(output).toMatch("canonical");
@@ -28,13 +27,13 @@ test("fetching data from url", async () => {
   expect(output).toMatch("links");
 });
 
-function cli(args, options) {
+function cli(args: any, options: any) {
   const command = `node ${path.resolve(
     __dirname,
-    "../cli/index.cjs"
+    "../cli/index.ts"
   )} ${args} ${URL} ${options}`;
   return new Promise((resolve, reject) => {
-    exec(command, (err, stdout, stderr) => {
+    exec(command, (err: any, stdout: any, stderr: any) => {
       if (err) {
         reject(err);
       } else {
