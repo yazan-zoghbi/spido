@@ -1,23 +1,20 @@
-const dotenv = require("dotenv").config();
-const Spido = require("..");
-const url = process.env.URL;
+import "dotenv/config";
+import Spido from "..";
 
-//before Each test define a new crawler instance
-beforeEach(() => {
-  crawler = new Spido(url);
-});
+const URL = process.env.URL || "https://www.google.com";
+const crawler = new Spido(URL, {});
 
 //testing return html from url with crawler
 test("get html from url", async () => {
-  const html = await crawler.getHTML(url);
+  const html = await crawler.getHTML(URL);
   expect(html).toBeDefined();
   expect(html.length).toBeGreaterThan(0);
 });
 
 //testing return seo data from url with crawler
 test("get seo data from url", async () => {
-  const html = await crawler.getHTML(url);
-  const seoData = await crawler.getSeoData(url);
+  const html = await crawler.getHTML(URL);
+  const seoData = await crawler.getSeoData(URL);
   expect(seoData).toBeDefined();
 
   //test if seo data is an object with properties types and values are strings
@@ -37,7 +34,7 @@ test("get seo data from url", async () => {
 
 //testing return links from html with crawler
 test("get links from html", async () => {
-  const html = await crawler.getHTML(url);
+  const html = await crawler.getHTML(URL);
   const links = await crawler.getLinks(html);
   expect(links).toBeDefined();
   expect(links.length).toBeGreaterThan(0);
@@ -45,7 +42,7 @@ test("get links from html", async () => {
 
 //testing return hostname from url with crawler
 test("get hostname from url", async () => {
-  const hostname = await crawler.getHostname(url);
+  const hostname = crawler.getHostname(URL);
   expect(hostname).toBeDefined();
   expect(hostname.length).toBeGreaterThan(0);
 });

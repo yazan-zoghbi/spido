@@ -1,11 +1,16 @@
 const cheerio = require("cheerio");
 const axios = require("axios").default;
 
-const Queue = require("./queue.cjs");
+import Queue from "./queue";
 
 //define main spido crawler module class
-class Spido {
-  constructor(url, options) {
+export default class Spido {
+  url: string;
+  options: { internalLinks: boolean; sitemap: boolean };
+  queue: any;
+  visited: Set<unknown>;
+  websiteSeoData: any[];
+  constructor(url: string, options: object) {
     this.url = url;
     this.options = {
       internalLinks: true,
@@ -73,7 +78,7 @@ class Spido {
     while (!this.queue.isEmpty()) {
       const urls = this.queue.urls;
       const seoData = await Promise.allSettled(
-        urls.map(async (url) => {
+        urls.map(async (url: string) => {
           console.log("crawling url: " + url);
           this.visited.add(url);
           this.queue.remove(url);
@@ -86,13 +91,13 @@ class Spido {
   }
 
   //check if url is valid & response is ok
-  async isValidUrl(url) {
+  async isValidUrl(url: string) {
     const validResponse = await axios
       .request({
         url,
         maxRedirects: 0,
       })
-      .catch(async (error) => {
+      .catch(async (error: any) => {
         if (
           error.response.status === 300 ||
           301 ||
@@ -106,7 +111,7 @@ class Spido {
         ) {
           return await axios
             .get(error.response.headers.location)
-            .then((response) => {
+            .then((response: any) => {
               if (response.status === 200) {
                 return true;
               } else {
@@ -119,17 +124,17 @@ class Spido {
   }
 
   //get sitemap url
-  async getSitemap(url) {
+  async getSitemap(url: string) {
     const baseUrl = this.getBaseUrl(url);
     return `${baseUrl}/sitemap.xml`;
   }
 
   //check if sitemap url is valid & response is 200
-  async isSitemap(url) {
+  async isSitemap(url: string) {
     const sitemapUrl = await this.getSitemap(url);
     return axios
       .get(sitemapUrl)
-      .then((response) => {
+      .then((response: any) => {
         return response.status === 200;
       })
       .catch(() => {
@@ -138,12 +143,12 @@ class Spido {
   }
 
   //get links from website sitemap
-  async getLinksFromSitemap(url) {
+  async getLinksFromSitemap(url: string) {
     const sitemapUrl = await this.getSitemap(this.url);
     const html = await this.getHTML(sitemapUrl);
     const $ = cheerio.load(html);
-    const links = [];
-    $("loc").each((i, link) => {
+    const links: any[] = [];
+    $("loc").each((i: any, link: object) => {
       links.push($(link).text());
     });
 
@@ -152,7 +157,7 @@ class Spido {
   }
 
   //fetching single page seo data from url & resolve promise with the data
-  async fetch(url) {
+  async fetch(url: string) {
     const html = await this.getHTML(url);
     const seoData = await this.getSeoDataFromHTML(html, url);
     console.log("fetching seo data from url: " + url);
@@ -160,13 +165,13 @@ class Spido {
   }
 
   //get the html from the url using axios & handle errors if any
-  async getHTML(url) {
+  async getHTML(url: string) {
     const response = await axios.get(url);
     return response.data;
   }
 
   //getting seo data from url
-  async getSeoData(url) {
+  async getSeoData(url: string) {
     if (url) {
       const html = await this.getHTML(url);
       const seoData = this.getSeoDataFromHTML(html, url);
@@ -175,10 +180,10 @@ class Spido {
   }
 
   //get the links from the html & add hostname to the url if it's not present
-  async getLinks(html) {
+  async getLinks(html: any) {
     const $ = cheerio.load(html);
-    const links = [];
-    $("a").each((i, link) => {
+    const links: any[] = [];
+    $("a").each((i: any, link: object) => {
       const href = $(link).attr("href");
       const hostname = this.getHostname(this.url);
       const baseUrl = this.getBaseUrl(this.url);
@@ -200,7 +205,7 @@ class Spido {
   }
 
   //get internal links array
-  async getInternalLinks(html) {
+  async getInternalLinks(html: any) {
     const baseUrl = this.getBaseUrl(this.url);
     const links = await this.getLinks(html);
     const internalLinks = links.filter((link) => link.startsWith(baseUrl));
@@ -210,20 +215,22 @@ class Spido {
   }
 
   //get external links only
-  async getExternalLinks(html) {
+  async getExternalLinks(html: any) {
     const links = this.getLinks(html);
-    const externalLinks = links.filter((link) => !link.startsWith(this.url));
+    const externalLinks = (await links).filter(
+      (link: string) => !link.startsWith(this.url)
+    );
     return externalLinks;
   }
 
   //get current url
-  async getCurrentUrl(url) {
+  async getCurrentUrl(url: string) {
     const response = await axios.get(url);
     return response.request.res.responseUrl;
   }
 
   //get hostname from header of url & add https:// to the url if it's not present
-  getHostname(url) {
+  getHostname(url: string) {
     if (!this.url) {
       throw new Error("url not defined");
     }
@@ -234,22 +241,22 @@ class Spido {
   }
 
   //get path name base url
-  getPath(url) {
+  getPath(url: string) {
     const baseUrl = this.getBaseUrl(url);
     const path = baseUrl.replace(baseUrl, "/");
     return path;
   }
 
   //get base url from hostname
-  getBaseUrl(url) {
+  getBaseUrl(url: string) {
     const hostname = this.getHostname(url);
     return `https://${hostname}`;
   }
 
   //get seo data from html
-  async getSeoDataFromHTML(html, url) {
+  async getSeoDataFromHTML(html: any, url: string) {
     const $ = cheerio.load(html);
-    const seoData = {};
+    const seoData: any = {};
     seoData.url = url.toString();
     seoData.title = $("title").text();
     seoData.description = $("meta[name='description']").attr("content");
@@ -259,5 +266,3 @@ class Spido {
     return seoData;
   }
 }
-
-module.exports = Spido;
