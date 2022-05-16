@@ -3,12 +3,12 @@ const Spido = require("..");
 const xmlFormatter = require("xml-formatter");
 
 // xml sitemap generator using crawler.cjs
-const sitemapLinksGenerator = async (url) => {
+const sitemapLinksGenerator = async (url: string) => {
   const crawler = new Spido(url);
   const html = await crawler.getHTML(url);
   const internalLinks = await crawler.getInternalLinks(html);
 
-  const sitemap = internalLinks.map((link) => {
+  const sitemap = internalLinks.map((link: string) => {
     return `<url><loc>${link}</loc></url>`;
   });
 
@@ -16,7 +16,7 @@ const sitemapLinksGenerator = async (url) => {
 };
 
 // convert sitemapGenerator to xml
-const addLinksToXML = async (sitemap) => {
+const addLinksToXML = async (sitemap: any) => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     ${sitemap.join("\n")}
@@ -28,21 +28,21 @@ const addLinksToXML = async (sitemap) => {
 };
 
 // write sitemap to file
-const writeSitemap = async (xml, path) => {
+const writeSitemap = async (xml: any, path: string) => {
   const file = "sitemap.xml";
 
   //write file to current directory or any other directory
   //if user want to write file to another directory then change the path
 
   if (!path) {
-    fs.writeFile(file, xml, (err) => {
+    fs.writeFile(file, xml, (err: any) => {
       if (err) throw err;
       console.log("Sitemap generated successfully");
     });
     return file;
   } else if (path) {
     console.log(path);
-    fs.writeFile(`${path}${file}`, xml, (err) => {
+    fs.writeFile(`${path}${file}`, xml, (err: any) => {
       if (err) throw err;
       console.log("Sitemap generated successfully");
     });

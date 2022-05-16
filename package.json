@@ -8,6 +8,7 @@
     "spido": "./cli/index.cjs"
   },
   "dependencies": {
+    "@types/jest": "^27.5.1",
     "axios": "^0.26.1",
     "boolbase": "^1.0.0",
     "cheerio": "^1.0.0-rc.10",
@@ -28,7 +29,9 @@
     "nth-check": "^2.0.1",
     "parse5": "^6.0.1",
     "parse5-htmlparser2-tree-adapter": "^6.0.1",
+    "ts-jest": "^28.0.2",
     "tslib": "^2.3.1",
+    "typescript": "^4.6.4",
     "xml-formatter": "^2.6.1"
   },
   "scripts": {
@@ -54,5 +57,8 @@
   "directories": {
     "lib": "lib",
     "test": "test"
+  },
+  "devDependencies": {
+    "@babel/preset-typescript": "^7.16.7"
   }
 }
