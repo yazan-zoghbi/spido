@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-const { program } = require("commander");
+import { program } from "commander";
 
-const Spido = require("..");
-const utils = require("../lib/core/utils.cjs");
+import Spido from "..";
+import * as utils from "../lib/core/utils";
 
 program
   .name("spido")
@@ -19,12 +19,8 @@ program
   .option("-s, --sitemap", "crawl sitemap links")
   .option("-i, --internal", "crawl internal links")
   .description("crawl the website")
-  .action(async (url, options) => {
-    const crawler = new Spido(url);
-    crawler.options = {
-      internalLinks: false,
-      sitemap: false,
-    };
+  .action(async (url: string, options: any) => {
+    const crawler = new Spido(url, { internalLinks: false, sitemap: false });
 
     if (options.sitemap) {
       crawler.options.sitemap = true;
@@ -50,8 +46,8 @@ program
   .command("fetch")
   .argument("<url>", "the url you'd like to fetch")
   .description("fetch seo data from url")
-  .action(async (url) => {
-    const crawler = new Spido(url);
+  .action(async (url: string) => {
+    const crawler = new Spido(url, {});
     const data = await crawler.fetch(url);
     console.log(data);
   });
@@ -61,10 +57,10 @@ program
   .argument("<url>", "the url of website you'd like to generate sitemap for")
   .option("-p <path>", "the path to save sitemap to")
   .description("generate sitemap for website")
-  .action(async (url, options) => {
+  .action(async (url: string, options: any) => {
     console.log(url, options.p);
     if (!options.p) {
-      const sitemap = await utils.sitemapGenerator(url);
+      const sitemap = await utils.sitemapGenerator(url, "");
       console.log(sitemap);
     } else if (options.p) {
       const sitemap = await utils.sitemapGenerator(url, options.p);
