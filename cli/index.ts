@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-const { program } = require("commander");
+import { program } from "commander";
 
 import Spido from "..";
-const utils = require("../lib/core/utils.js");
+import * as utils from "../lib/core/utils";
 
 program
   .name("spido")
@@ -60,7 +60,7 @@ program
   .action(async (url: string, options: any) => {
     console.log(url, options.p);
     if (!options.p) {
-      const sitemap = await utils.sitemapGenerator(url);
+      const sitemap = await utils.sitemapGenerator(url, "");
       console.log(sitemap);
     } else if (options.p) {
       const sitemap = await utils.sitemapGenerator(url, options.p);

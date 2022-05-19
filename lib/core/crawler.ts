@@ -1,5 +1,5 @@
-const cheerio = require("cheerio");
-const axios = require("axios").default;
+import cheerio from "cheerio";
+import axios from "axios";
 
 import Queue from "./queue";
 
@@ -148,7 +148,7 @@ export default class Spido {
     const html = await this.getHTML(sitemapUrl);
     const $ = cheerio.load(html);
     const links: any[] = [];
-    $("loc").each((i: any, link: object) => {
+    $("loc").each((i: any, link) => {
       links.push($(link).text());
     });
 
@@ -183,7 +183,7 @@ export default class Spido {
   async getLinks(html: any) {
     const $ = cheerio.load(html);
     const links: any[] = [];
-    $("a").each((i: any, link: object) => {
+    $("a").each((i: any, link) => {
       const href = $(link).attr("href");
       const hostname = this.getHostname(this.url);
       const baseUrl = this.getBaseUrl(this.url);

@@ -1,10 +1,10 @@
-const fs = require("fs");
-const Spido = require("..");
-const xmlFormatter = require("xml-formatter");
+import fs from "fs";
+import Spido from "..";
+import xmlFormatter from "xml-formatter";
 
 // xml sitemap generator using crawler.cjs
-const sitemapLinksGenerator = async (url: string) => {
-  const crawler = new Spido(url);
+export const sitemapLinksGenerator = async (url: string) => {
+  const crawler = new Spido(url, {});
   const html = await crawler.getHTML(url);
   const internalLinks = await crawler.getInternalLinks(html);
 
@@ -16,7 +16,7 @@ const sitemapLinksGenerator = async (url: string) => {
 };
 
 // convert sitemapGenerator to xml
-const addLinksToXML = async (sitemap: any) => {
+export const addLinksToXML = async (sitemap: any) => {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
     <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     ${sitemap.join("\n")}
@@ -28,7 +28,7 @@ const addLinksToXML = async (sitemap: any) => {
 };
 
 // write sitemap to file
-const writeSitemap = async (xml: any, path: string) => {
+export const writeSitemap = async (xml: any, path: string) => {
   const file = "sitemap.xml";
 
   //write file to current directory or any other directory
@@ -49,11 +49,4 @@ const writeSitemap = async (xml: any, path: string) => {
 
     return path + file;
   }
-};
-
-//module export utils.cjs
-module.exports = {
-  sitemapLinksGenerator,
-  addLinksToXML,
-  writeSitemap,
 };

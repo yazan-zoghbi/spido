@@ -2,16 +2,12 @@
  * this files will include all utilities functions
  */
 
-const xmlSiteMapGenerator = require("../xml-sitemap-generator.cjs");
+import * as xmlSiteMapGenerator from "../xml-sitemap-generator";
 
-module.exports = {
-  sitemapGenerator: async (url: string, path: string) => {
-    const sitemapLinksSet = await xmlSiteMapGenerator.sitemapLinksGenerator(
-      url
-    );
-    const sitemap = await xmlSiteMapGenerator.addLinksToXML(sitemapLinksSet);
-    const file = await xmlSiteMapGenerator.writeSitemap(sitemap, path);
+export const sitemapGenerator = async (url: string, path: string) => {
+  const sitemapLinksSet = await xmlSiteMapGenerator.sitemapLinksGenerator(url);
+  const sitemap = await xmlSiteMapGenerator.addLinksToXML(sitemapLinksSet);
+  const file = await xmlSiteMapGenerator.writeSitemap(sitemap, path);
 
-    return file;
-  },
+  return file;
 };
