@@ -79,6 +79,12 @@ more information about spido CLI can be found in [CLI Documentation](docs/usage/
 
 - Fixed: handle errors when defining the crawler options.
 
+## Credits
+
+- [@Yazan-Zoghbi](https://github.com/yazan-zoghbi)- original author
+- [@karam-mustafa](https://github.com/karam-mustafa) - organization maintainer
+- [@Yamanlk](https://github.com/Yamanlk) - cli contributor
+
 ## Links 🔗
 
 - [npm](https://www.npmjs.com/package/spido)
