@@ -1,5 +1,5 @@
 import "dotenv/config";
-import Spido from "..";
+import {Spido} from "..";
 
 const URL = process.env.URL || "https://www.google.com";
 const crawler = new Spido(URL, {});

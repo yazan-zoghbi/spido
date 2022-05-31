@@ -1,5 +1,5 @@
 import fs from "fs";
-import Spido from "..";
+import {Spido} from "..";
 import xmlFormatter from "xml-formatter";
 
 // xml sitemap generator using crawler.cjs

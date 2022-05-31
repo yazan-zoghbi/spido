@@ -2,7 +2,7 @@
 
 import { program } from "commander";
 
-import Spido from "..";
+import {Spido} from "..";
 import * as utils from "../lib/core/utils";
 
 program

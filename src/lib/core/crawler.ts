@@ -1,14 +1,16 @@
 import cheerio from "cheerio";
 import axios from "axios";
+import * as path from "path";
+import { Worker } from "worker_threads";
 
 import Queue from "./queue";
 
 //define main spido crawler module class
-export default class Spido {
+export class Spido {
+  queue: Queue;
   url: string;
   options: { internalLinks: boolean; sitemap: boolean };
-  queue: any;
-  visited: Set<unknown>;
+  visited: Set<string>;
   websiteSeoData: any[];
   constructor(url: string, options: object) {
     this.url = url;
@@ -38,17 +40,21 @@ export default class Spido {
     }
 
     const baseUrl = this.getBaseUrl(this.url);
-    this.queue.add(baseUrl);
+    this.queue.enqueue(baseUrl);
 
     //if internal links are enabled
     if (this.options.internalLinks) {
       const html = await this.getHTML(this.url);
       const internalLinks = await this.getInternalLinks(html);
-      internalLinks.forEach((link) => {
-        if (!this.queue.urls.includes(link)) {
-          this.queue.add(link);
-        }
-      });
+      Promise.allSettled(
+        internalLinks.map(async (link) => {
+          const isValidLink = await this.isValidUrl(link);
+          if (isValidLink && !this.queue.enqueue(link)) {
+            console.log("adding link to queue: " + link);
+            this.queue.enqueue(link);
+          }
+        })
+      );
     }
 
     //if sitemap is enabled
@@ -63,7 +69,7 @@ export default class Spido {
       Promise.allSettled(
         sitemapLinks.map(async (link) => {
           if (!this.queue.urls.includes(link)) {
-            this.queue.add(link);
+            this.queue.enqueue(link);
           }
         })
       );
@@ -74,20 +80,31 @@ export default class Spido {
       throw new Error("No options enabled!");
     }
 
-    //run the crawler until the queue is empty
-    while (!this.queue.isEmpty()) {
-      const urls = this.queue.urls;
-      const seoData = await Promise.allSettled(
-        urls.map(async (url: string) => {
-          console.log("crawling url: " + url);
-          this.visited.add(url);
-          this.queue.remove(url);
-          const seoData = await this.fetch(url);
-          return this.websiteSeoData.push(seoData);
-        })
-      );
+    //while visited urls are less than the queue urls
+    while (this.visited.size < this.queue.urls.length) {
+      const url = this.queue.urls[0];
+      //loop through the queue urls
+      for (let i = 0; i < this.queue.urls.length; i++) {
+        const currentUrl = this.queue.urls[i];
+        if (!this.visited.has(currentUrl)) {
+          console.log("visiting url: " + currentUrl);
+          const html = await this.getHTML(currentUrl);
+          const internalLinks = await this.getInternalLinks(html);
+          Promise.allSettled(
+            internalLinks.map(async (link) => {
+              const isValidLink = await this.isValidUrl(link);
+              if (isValidLink && !this.queue.urls.includes(link)) {
+                console.log("found new link, adding" + link + " to queue");
+                this.queue.enqueue(link);
+              }
+            })
+          );
+          this.visited.add(currentUrl);
+          await this.fetchAsync(currentUrl);
+        }
+      }
     }
-    return this.websiteSeoData;
+    console.log("crawling finished");
   }
 
   //check if url is valid & response is ok
@@ -264,5 +281,20 @@ export default class Spido {
     seoData.robots = $("meta[name='robots']").attr("content");
     seoData.links = (await this.getLinks(html)).length;
     return seoData;
+  }
+
+  async fetchAsync(url: string) {
+    const worker = new Worker(path.join(__dirname, "fetch-worker.js"), {});
+    worker.on("message", async (result) => {
+      this.websiteSeoData.push(result.data);
+      worker.terminate();
+    });
+
+    worker.on("error", (error) => {
+      console.log(error);
+    });
+
+    worker.postMessage(url);
+    console.log("sending url to worker: " + url);
   }
 }
