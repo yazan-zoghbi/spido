@@ -1,12 +1,12 @@
 import fs from "fs";
-import {Spido} from "..";
+import { Spido } from "..";
+import * as utils from "./core/utils";
 import xmlFormatter from "xml-formatter";
 
 // xml sitemap generator using crawler.cjs
 export const sitemapLinksGenerator = async (url: string) => {
-  const crawler = new Spido(url, {});
-  const html = await crawler.getHTML(url);
-  const internalLinks = await crawler.getInternalLinks(html);
+  const html = await utils.getHTML(url);
+  const internalLinks = await utils.getInternalLinks(url, html);
 
   const sitemap = internalLinks.map((link: string) => {
     return `<url><loc>${link}</loc></url>`;
