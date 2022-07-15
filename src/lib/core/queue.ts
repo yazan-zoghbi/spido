@@ -6,6 +6,7 @@ export default class Queue {
   urls: string[] = [];
 
   enqueue(url: string) {
+    console.log("adding link to queue: " + url);
     return this.urls.push(url);
   }
 
@@ -15,5 +16,9 @@ export default class Queue {
 
   peek() {
     return this.urls[0];
+  }
+
+  remove() {
+    return this.urls.shift();
   }
 }
