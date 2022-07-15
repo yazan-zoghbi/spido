@@ -1,6 +1,6 @@
 import "dotenv/config";
 const { expect } = require("@jest/globals");
-import Spido from "..";
+import { Spido } from "..";
 
 jest.setTimeout(60000);
 
