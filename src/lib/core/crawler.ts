@@ -1,9 +1,5 @@
-import cheerio from "cheerio";
-import axios from "axios";
-import * as path from "path";
-import { Worker } from "worker_threads";
-
 import Queue from "./queue";
+import * as utils from "./utils";
 
 //define main spido crawler module class
 export class Spido {
@@ -34,38 +30,28 @@ export class Spido {
       throw new Error("url not defined! please define url");
     }
 
-    const isValidUrl = await this.isValidUrl(this.url);
+    const isValidUrl = await utils.isValidUrl(this.url);
     if (!isValidUrl) {
       throw new Error("Invalid url! - " + this.url);
     }
 
-    const baseUrl = this.getBaseUrl(this.url);
+    const baseUrl = utils.getBaseUrl(this.url);
     this.queue.enqueue(baseUrl);
 
     //if internal links are enabled
     if (this.options.internalLinks) {
-      const html = await this.getHTML(this.url);
-      const internalLinks = await this.getInternalLinks(html);
-      Promise.allSettled(
-        internalLinks.map(async (link) => {
-          const isValidLink = await this.isValidUrl(link);
-          if (isValidLink && !this.queue.enqueue(link)) {
-            console.log("adding link to queue: " + link);
-            this.queue.enqueue(link);
-          }
-        })
-      );
+      await this.internalLinksEnabled(this.url);
     }
 
     //if sitemap is enabled
     if (this.options.sitemap) {
-      const isSitemap = await this.isSitemap(this.url);
+      const isSitemap = await utils.isSitemap(this.url);
 
       if (!isSitemap) {
-        throw new Error("Invalid sitemap url! - " + this.getSitemap(this.url));
+        throw new Error("Invalid sitemap url! - " + utils.getSitemap(this.url));
       }
 
-      const sitemapLinks = await this.getLinksFromSitemap(this.url);
+      const sitemapLinks = await utils.getLinksFromSitemap(this.url);
       Promise.allSettled(
         sitemapLinks.map(async (link) => {
           if (!this.queue.urls.includes(link)) {
@@ -81,220 +67,53 @@ export class Spido {
     }
 
     //while visited urls are less than the queue urls
-    while (this.visited.size < this.queue.urls.length) {
-      const url = this.queue.urls[0];
-      //loop through the queue urls
+    while (
+      this.queue.urls.length > 0 &&
+      this.queue.urls.length != this.visited.size
+    ) {
+      console.log("visited urls: " + this.visited.size);
+      console.log("queue urls: " + this.queue.urls.length);
+
       for (let i = 0; i < this.queue.urls.length; i++) {
-        const currentUrl = this.queue.urls[i];
+        let currentUrl = this.queue.urls[i];
         if (!this.visited.has(currentUrl)) {
-          console.log("visiting url: " + currentUrl);
-          const html = await this.getHTML(currentUrl);
-          const internalLinks = await this.getInternalLinks(html);
-          Promise.allSettled(
-            internalLinks.map(async (link) => {
-              const isValidLink = await this.isValidUrl(link);
-              if (isValidLink && !this.queue.urls.includes(link)) {
-                console.log("found new link, adding" + link + " to queue");
-                this.queue.enqueue(link);
-              }
-            })
-          );
+          console.log("visiting url: " + currentUrl + ", i: " + i);
+          const html = await utils.getHTML(currentUrl);
+          const internalLinks = await utils.getInternalLinks(currentUrl, html);
+          internalLinks.forEach(async (link) => {
+            const isValidLink = await utils.isValidUrl(link);
+            if (
+              isValidLink &&
+              !this.queue.urls.includes(link) &&
+              !this.visited.has(link)
+            ) {
+              this.queue.enqueue(link);
+            }
+          });
           this.visited.add(currentUrl);
-          await this.fetchAsync(currentUrl);
         }
+        await this.fetch(currentUrl);
       }
     }
     console.log("crawling finished");
   }
 
-  //check if url is valid & response is ok
-  async isValidUrl(url: string) {
-    const validResponse = await axios
-      .request({
-        url,
-        maxRedirects: 0,
-      })
-      .catch(async (error: any) => {
-        if (
-          error.response.status === 300 ||
-          301 ||
-          302 ||
-          303 ||
-          304 ||
-          305 ||
-          306 ||
-          307 ||
-          308
-        ) {
-          return await axios
-            .get(error.response.headers.location)
-            .then((response: any) => {
-              if (response.status === 200) {
-                return true;
-              } else {
-                return false;
-              }
-            });
-        }
-      });
-    return validResponse;
-  }
-
-  //get sitemap url
-  async getSitemap(url: string) {
-    const baseUrl = this.getBaseUrl(url);
-    return `${baseUrl}/sitemap.xml`;
-  }
-
-  //check if sitemap url is valid & response is 200
-  async isSitemap(url: string) {
-    const sitemapUrl = await this.getSitemap(url);
-    return axios
-      .get(sitemapUrl)
-      .then((response: any) => {
-        return response.status === 200;
-      })
-      .catch(() => {
-        return false;
-      });
-  }
-
-  //get links from website sitemap
-  async getLinksFromSitemap(url: string) {
-    const sitemapUrl = await this.getSitemap(this.url);
-    const html = await this.getHTML(sitemapUrl);
-    const $ = cheerio.load(html);
-    const links: any[] = [];
-    $("loc").each((i: any, link) => {
-      links.push($(link).text());
-    });
-
-    const uniqueLinks = [...new Set(links)];
-    return uniqueLinks;
-  }
-
   //fetching single page seo data from url & resolve promise with the data
   async fetch(url: string) {
-    const html = await this.getHTML(url);
-    const seoData = await this.getSeoDataFromHTML(html, url);
-    console.log("fetching seo data from url: " + url);
-    return seoData;
+    const html = await utils.getHTML(url);
+    const seoData = await utils.getSeoDataFromHTML(html, url);
+    return this.websiteSeoData.push(seoData);
   }
 
-  //get the html from the url using axios & handle errors if any
-  async getHTML(url: string) {
-    const response = await axios.get(url);
-    return response.data;
-  }
+  private async internalLinksEnabled(url: string) {
+    const html = await utils.getHTML(url);
+    const internalLinks = await utils.getInternalLinks(url, html);
 
-  //getting seo data from url
-  async getSeoData(url: string) {
-    if (url) {
-      const html = await this.getHTML(url);
-      const seoData = this.getSeoDataFromHTML(html, url);
-      return seoData;
-    }
-  }
-
-  //get the links from the html & add hostname to the url if it's not present
-  async getLinks(html: any) {
-    const $ = cheerio.load(html);
-    const links: any[] = [];
-    $("a").each((i: any, link) => {
-      const href = $(link).attr("href");
-      const hostname = this.getHostname(this.url);
-      const baseUrl = this.getBaseUrl(this.url);
-
-      //if the link is not a relative url
-      if (href) {
-        if (href.startsWith(baseUrl)) {
-          links.push(href);
-        }
-        //if the link is relative url
-        else if (href.startsWith("/")) {
-          links.push(`${baseUrl}${href}`);
-        }
-      } else {
-        links.push(hostname + "/" + href);
+    internalLinks.forEach(async (link: string) => {
+      const isValidLink = await utils.isValidUrl(link);
+      if (isValidLink && !this.queue.urls.includes(link)) {
+        this.queue.enqueue(link);
       }
     });
-    return links;
-  }
-
-  //get internal links array
-  async getInternalLinks(html: any) {
-    const baseUrl = this.getBaseUrl(this.url);
-    const links = await this.getLinks(html);
-    const internalLinks = links.filter((link) => link.startsWith(baseUrl));
-    //remove duplicates from the array
-    const uniqueLinks = [...new Set(internalLinks)];
-    return uniqueLinks;
-  }
-
-  //get external links only
-  async getExternalLinks(html: any) {
-    const links = this.getLinks(html);
-    const externalLinks = (await links).filter(
-      (link: string) => !link.startsWith(this.url)
-    );
-    return externalLinks;
-  }
-
-  //get current url
-  async getCurrentUrl(url: string) {
-    const response = await axios.get(url);
-    return response.request.res.responseUrl;
-  }
-
-  //get hostname from header of url & add https:// to the url if it's not present
-  getHostname(url: string) {
-    if (!this.url) {
-      throw new Error("url not defined");
-    }
-
-    url = this.url;
-    const hostname = url.split("/")[2];
-    return hostname.replace("www.", "");
-  }
-
-  //get path name base url
-  getPath(url: string) {
-    const baseUrl = this.getBaseUrl(url);
-    const path = baseUrl.replace(baseUrl, "/");
-    return path;
-  }
-
-  //get base url from hostname
-  getBaseUrl(url: string) {
-    const hostname = this.getHostname(url);
-    return `https://${hostname}`;
-  }
-
-  //get seo data from html
-  async getSeoDataFromHTML(html: any, url: string) {
-    const $ = cheerio.load(html);
-    const seoData: any = {};
-    seoData.url = url.toString();
-    seoData.title = $("title").text();
-    seoData.description = $("meta[name='description']").attr("content");
-    seoData.canonical = $("link[rel='canonical']").attr("href");
-    seoData.robots = $("meta[name='robots']").attr("content");
-    seoData.links = (await this.getLinks(html)).length;
-    return seoData;
-  }
-
-  async fetchAsync(url: string) {
-    const worker = new Worker(path.join(__dirname, "fetch-worker.js"), {});
-    worker.on("message", async (result) => {
-      this.websiteSeoData.push(result.data);
-      worker.terminate();
-    });
-
-    worker.on("error", (error) => {
-      console.log(error);
-    });
-
-    worker.postMessage(url);
-    console.log("sending url to worker: " + url);
   }
 }
