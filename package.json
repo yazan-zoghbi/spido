@@ -5,7 +5,7 @@
   "type": "commonjs",
   "main": "./dist/index.js",
   "bin": {
-    "spido": "./dist/cli/index.cjs"
+    "spido": "./dist/cli/index.js"
   },
   "dependencies": {
     "axios": "^0.26.1",
