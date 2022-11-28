@@ -1,14 +1,11 @@
-const dotenv = require("dotenv").config();
+import "dotenv/config";
 const { expect } = require("@jest/globals");
-const Spido = require("..");
-const url = process.env.URL;
+import { Spido } from "..";
 
 jest.setTimeout(60000);
 
-//before Each test define a new crawler instance
-beforeEach(() => {
-  crawler = new Spido(url);
-});
+const URL = process.env.URL || "https://www.google.com";
+const crawler = new Spido(URL, {});
 
 //test crawling process with default options
 test("crawl website with default options", async () => {

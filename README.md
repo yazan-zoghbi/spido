@@ -51,6 +51,8 @@ spido.crawl(url, (err, data) => {
 });
 ```
 
+more information about spido API's can be found in [API's Documentation](docs/usage/1-api.md).
+
 ### CLI 💻
 
 spido can be used as a command line tool, which can return the SEO information and print it on the console.
@@ -67,6 +69,8 @@ $ spido fetch https://www.example.com
 $ spido crawl https://www.example.com
 ```
 
+more information about spido CLI can be found in [CLI Documentation](docs/usage/2-cli.md).
+
 ## Bug Fixes 🐛
 
 ### v1.1.3:
@@ -75,11 +79,11 @@ $ spido crawl https://www.example.com
 
 - Fixed: handle errors when defining the crawler options.
 
-## TODO 🛠
+## Credits
 
-- Extract the information and save it to a JSON file
-- Limit the number of links that can be crawled in a website
-- The ability to use as a docker image
+- [@Yazan-Zoghbi](https://github.com/yazan-zoghbi)- original author
+- [@karam-mustafa](https://github.com/karam-mustafa) - organization maintainer
+- [@Yamanlk](https://github.com/Yamanlk) - cli contributor
 
 ## Links 🔗
 
