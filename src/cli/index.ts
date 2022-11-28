@@ -2,7 +2,7 @@
 
 import { program } from "commander";
 
-import Spido from "..";
+import {Spido} from "..";
 import * as utils from "../lib/core/utils";
 
 program
@@ -11,7 +11,7 @@ program
   .usage("<command>")
   .addHelpCommand(true)
   .helpOption(true)
-  .version(require("../package.json").version);
+  .version('1.2.0 beta');
 
 program
   .command("crawl")
