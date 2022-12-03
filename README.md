@@ -73,11 +73,11 @@ more information about spido CLI can be found in [CLI Documentation](docs/usage/
 
 ## Bug Fixes 🐛
 
-### v1.1.3:
+### v1.3.1:
 
-- Fixed: `spido crawl` command line tool.
+- Fixed: import spido in typescript project fixed
 
-- Fixed: handle errors when defining the crawler options.
+- Fixed: importing/using utilities in other projects fixed
 
 ## Credits
 
