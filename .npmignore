@@ -3,3 +3,6 @@ docs
 
 #vscode
 .vscode
+
+#npm
+.npmrc
