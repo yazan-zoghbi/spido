@@ -36,11 +36,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Syrian-Open-Source/Spido.git"
+    "url": "git+https://github.com/Syrian-Open-Source/spido.git"
   },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
+ 
   "keywords": [
     "SEO",
     "Crawler",
