@@ -4,12 +4,13 @@
     "module": "CommonJS",
     "lib": ["ES6", "ES2015", "DOM", "ES2018"],
     "declaration": true,
-    "outDir": "dist",
     "rootDir": "src",
+    "outDir": "dist",
     "strict": true,
-    "types": ["node", "jest"],
+    "types": ["node"],
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "downlevelIteration": true
-  }
+  }, 
+  "exclude":[ "src/test"],
 }

@@ -1,7 +1,7 @@
 {
   "name": "spido",
   "version": "1.4.0",
-  "description": "A crawler that crawls the site's internal links, fetching information of interest to any SEO specialist to perform appropriate analysis on the site.",
+  "description": "Web crawler/spider for node.js & nest.js server.",
   "type": "commonjs",
   "main": "./dist/index.js",
   "bin": {
@@ -38,7 +38,6 @@
     "type": "git",
     "url": "git+https://github.com/Syrian-Open-Source/spido.git"
   },
- 
   "keywords": [
     "SEO",
     "Crawler",
