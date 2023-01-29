@@ -1,3 +1,15 @@
+## Version 1.4.2
+
+### Features Added
+
+- images now can be extracted from html pages with utils getImages(url).
+
+### Improvements
+
+- add image interface to ensure type safety
+
+---
+
 ## Version 1.1.2
 
 ### Features Added

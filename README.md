@@ -71,13 +71,11 @@ $ spido crawl https://www.example.com
 
 more information about spido CLI can be found in [CLI Documentation](docs/usage/2-cli.md).
 
-## Bug Fixes 🐛
+## New Features 🐛
 
-### v1.3.1:
+### v1.4.2:
 
-- Fixed: import spido in typescript project fixed
-
-- Fixed: importing/using utilities in other projects fixed
+- images now can be extracted from html pages with utils getImages(url).
 
 ## Credits
 

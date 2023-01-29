@@ -3,7 +3,7 @@ import cheerio from "cheerio";
 
 import * as xmlSiteMapGenerator from "../xml-sitemap-generator";
 
-// SEO DATA type 
+// SEO DATA type
 export type seoData = {
   url: string;
   title: string;
@@ -13,6 +13,11 @@ export type seoData = {
   links: number;
 };
 
+// Image type
+export interface Image {
+  alt: string;
+  src: string;
+}
 
 axios.defaults.headers.get = { "User-Agent": "Axios 0.21.1" };
 
@@ -185,3 +190,19 @@ export const sitemapGenerator = async (url: string, path: string) => {
 
   return file;
 };
+
+export const getImages = async (url: string): Promise<Image[]> => {
+  const images: Image[] = [];
+  const $ = cheerio.load(await getHTML(url));
+
+  $("img").each((i, element) => {
+    const alt = $(element).attr("alt") || "";
+    const src = $(element).attr("src");
+    if (src) {
+      images.push({ alt: alt, src: src });
+    }
+  });
+
+  return images;
+};
+
