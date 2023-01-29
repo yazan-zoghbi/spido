@@ -1,6 +1,6 @@
 {
   "name": "spido",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Web crawler/spider for node.js & nest.js server.",
   "type": "commonjs",
   "main": "./dist/index.js",
