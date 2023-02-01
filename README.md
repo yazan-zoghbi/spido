@@ -73,9 +73,11 @@ more information about spido CLI can be found in [CLI Documentation](docs/usage/
 
 ## New Features 🐛
 
-### v1.4.2:
+### v1.4.3:
 
 - images now can be extracted from html pages with utils getImages(url).
+- heading tags can now be extracted from html pages with getHeadings(url).
+- JsDoc added to all utils functions, it should be easier now for developers to understand how features / functions would works
 
 ## Credits
 
