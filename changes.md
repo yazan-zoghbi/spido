@@ -1,3 +1,15 @@
+## Version 1.4.3
+
+### Features Added
+
+- heading tags can now be extracted from html pages with getHeadings(url).
+
+### Improvements
+
+- JsDoc added to all utils functions, it should be easier now for developers to understand how features / functions would works
+
+---
+
 ## Version 1.4.2
 
 ### Features Added
