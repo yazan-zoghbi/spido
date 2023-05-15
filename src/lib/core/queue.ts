@@ -2,7 +2,7 @@
 //the class is used to store all the links that are going to be crawled
 //the methods are used to add, remove and check if the link is in the queue
 
-export default class Queue {
+export class Queue {
   urls: string[] = [];
 
   enqueue(url: string) {
@@ -22,3 +22,5 @@ export default class Queue {
     return this.urls.shift();
   }
 }
+
+module.exports = { Queue };

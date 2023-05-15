@@ -1,11 +1,13 @@
-import Queue from "./queue";
-import * as utils from "./utils";
+import { Queue } from "./queue";
+import { Utils } from "./utils";
+
+const utils = new Utils();
 
 //define main spido crawler module class
 export class Spido {
   queue: Queue;
   url: string;
-  options: { internalLinks: boolean; sitemap: boolean };
+  options: { internalLinks: boolean; sitemap: boolean; depth: number };
   visited: Set<string>;
   websiteSeoData: any[];
   constructor(url: string, options: object) {
@@ -13,6 +15,7 @@ export class Spido {
     this.options = {
       internalLinks: true,
       sitemap: false,
+      depth: 0,
     };
     Object.assign(this.options, options);
     this.queue = new Queue();
@@ -25,6 +28,9 @@ export class Spido {
   //in the queue and visited set respectively
 
   async crawl() {
+    //initialize configurations
+    const depthLimit = this.options.depth;
+
     //if url not defined throw error
     if (!this.url) {
       throw new Error("url not defined! please define url");
@@ -35,7 +41,7 @@ export class Spido {
       throw new Error("Invalid url! - " + this.url);
     }
 
-    const baseUrl = utils.getBaseUrl(this.url);
+    const baseUrl = await utils.getBaseUrl(this.url);
     this.queue.enqueue(baseUrl);
 
     //if internal links are enabled
@@ -52,9 +58,17 @@ export class Spido {
       }
 
       const sitemapLinks = await utils.getLinksFromSitemap(this.url);
-      Promise.allSettled(
-        sitemapLinks.map(async (link) => {
-          if (!this.queue.urls.includes(link)) {
+      await Promise.allSettled(
+        sitemapLinks.map(async (link: any) => {
+          if (this.queue.urls.includes(link)) {
+            return;
+          }
+
+          let URLdepth = (await utils.getUrlPathDepth(link)) ?? 0;
+          if (
+            URLdepth === depthLimit ||
+            (depthLimit && URLdepth <= depthLimit)
+          ) {
             this.queue.enqueue(link);
           }
         })
@@ -80,12 +94,19 @@ export class Spido {
           console.log("visiting url: " + currentUrl + ", i: " + i);
           const html = await utils.getHTML(currentUrl);
           const internalLinks = await utils.getInternalLinks(currentUrl, html);
-          internalLinks.forEach(async (link) => {
+          internalLinks.forEach(async (link: any) => {
             const isValidLink = await utils.isValidUrl(link);
             if (
               isValidLink &&
-              !this.queue.urls.includes(link) &&
-              !this.visited.has(link)
+              this.queue.urls.includes(link) &&
+              this.visited.has(link)
+            ) {
+              return;
+            }
+            let URLdepth = (await utils.getUrlPathDepth(link)) ?? 0;
+            if (
+              URLdepth === depthLimit ||
+              (depthLimit && URLdepth <= depthLimit)
             ) {
               this.queue.enqueue(link);
             }
@@ -100,6 +121,7 @@ export class Spido {
 
   //fetching single page seo data from url & resolve promise with the data
   async fetch(url: string) {
+    const utils = new Utils();
     const html = await utils.getHTML(url);
     const seoData = await utils.getSeoDataFromHTML(html, url);
     return this.websiteSeoData.push(seoData);
@@ -117,3 +139,5 @@ export class Spido {
     });
   }
 }
+
+module.exports = { Spido };
