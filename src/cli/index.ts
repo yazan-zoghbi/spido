@@ -2,8 +2,8 @@
 
 import { program } from "commander";
 
-import {Spido} from "..";
-import * as utils from "../lib/core/utils";
+const { Spido } = require("../lib/core/crawler");
+const utils = require("./utils");
 
 program
   .name("spido")
@@ -11,7 +11,7 @@ program
   .usage("<command>")
   .addHelpCommand(true)
   .helpOption(true)
-  .version('1.2.0 beta');
+  .version("1.2.0 beta");
 
 program
   .command("crawl")
