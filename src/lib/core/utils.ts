@@ -1,8 +1,8 @@
-import axios from "axios";
+import axios, { AxiosResponse } from "axios";
 import cheerio from "cheerio";
 const fetch = require("node-fetch");
 
-import * as xmlSiteMapGenerator from "../xml-sitemap-generator";
+// import * as xmlSiteMapGenerator from "../xml-sitemap-generator";
 
 // SEO DATA type
 type seoData = {
@@ -19,6 +19,11 @@ export interface Image {
   alt: string;
   src: string;
 }
+
+export type Response = {
+  response: AxiosResponse;
+  responseURL: string;
+};
 
 axios.defaults.headers.get = { "User-Agent": "Axios 0.21.1" };
 
@@ -44,18 +49,18 @@ Extracts the hostname from a URL
   @param {string} url - The URL to extract the base URL from
   @returns {string} - The base URL of the URL
   */
-  getBaseUrl = async (enteredURL: string): Promise<string> => {
-    const url = new URL(enteredURL);
+  getBaseUrl = async (url: string): Promise<string> => {
     try {
-      const response = await fetch(url);
-      if (response.status >= 200 && response.status < 400) {
+      const response = await this.getResponse(url);
+      const responseURL = response.responseURL;
+      if (response.response.status >= 200 && response.response.status < 400) {
         // if response status is valid, return the base URL
-        return new URL(response.url).origin;
+        return new URL(responseURL).href;
       }
       // if response status not valid, throw an error
-      else throw new Error(`Invalid url! -  ${enteredURL}`);
+      else throw new Error(`Invalid url! -  ${url}`);
     } catch (err: unknown) {
-      throw new Error(`Invalid url! ${enteredURL}`);
+      throw new Error(`Invalid url! ${url}`);
     }
   };
 
@@ -83,14 +88,9 @@ This function uses the Axios library to check if the given URL is valid and the 
 isValidUrl('https://www.example.com')
 .then(valid => console.log(valid)) // returns true or false
 */
-  isValidUrl = async (url: string): Promise<boolean> => {
+  isValidUrl = async (status: number): Promise<boolean> => {
     try {
-      const response = await axios.request({
-        url,
-        maxRedirects: 0,
-      });
-
-      if (response.status === 200) {
+      if (status === 200) {
         return true;
       } else {
         return false;
@@ -157,9 +157,10 @@ Retrieve the HTML from a specified URL using Axios.
 @returns {Promise<string>} The HTML data retrieved from the URL.
 @throws {Error} If there is an error with the Axios request, the error will be thrown.
 */
-  getHTML = async (url: string) => {
+  getResponse = async (url: string): Promise<Response> => {
     const response = await axios.get(url);
-    return response.data;
+    const responseURL = response.request.res.responseUrl;
+    return { response, responseURL };
   };
 
   /**
@@ -172,8 +173,8 @@ Get links from a website sitemap.
 */
   getLinksFromSitemap = async (url: string) => {
     const sitemapUrl = await this.getSitemap(url);
-    const html = await this.getHTML(sitemapUrl);
-    const $ = cheerio.load(html);
+    const response = (await this.getResponse(sitemapUrl)).response.data;
+    const $ = cheerio.load(response);
     const links: any[] = [];
     $("loc").each((i: any, link) => {
       links.push($(link).text());
@@ -199,15 +200,15 @@ Get links from a website sitemap.
 @property {string} robots - the robots instructions of the HTML source code.
 @property {number} links - the number of links in the HTML source code.
 */
-  getSeoDataFromHTML = async (html: any, url: string) => {
-    const $ = cheerio.load(html);
+  getSeoDataFromHTML = async (response: AxiosResponse, url: string) => {
+    const $ = cheerio.load(response.data);
     const seoData: seoData = {
       url: url.toString(),
       title: $("title").text(),
       description: $("meta[name='description']").attr("content"),
       canonical: $("link[rel='canonical']").attr("href"),
       robots: $("meta[name='robots']").attr("content"),
-      links: (await this.getLinks(url, html)).length,
+      links: (await this.getLinks(url, response)).length,
     };
 
     return seoData;
@@ -223,11 +224,11 @@ Get links from a website sitemap.
 This function extracts all the links from an HTML content and adds the hostname to the URL if it's not present.
 The links are returned as an array.
 */
-  getLinks = async (url: string, html: any) => {
-    const $ = cheerio.load(html);
-    const baseUrl = await this.getBaseUrl(url);
+  getLinks = async (url: string, response: AxiosResponse) => {
+    const $ = cheerio.load(response.data);
+    const baseUrl = new URL(url).origin;
 
-    const links: any[] = [];
+    const links: string[] = [];
     $("a").each((i: any, link: any) => {
       const href = $(link).attr("href");
       if (href) {
@@ -252,16 +253,14 @@ The links are returned as an array.
    * @param {any} html - The HTML document as a string or an object
    * @returns {Array} - An array of internal links
    */
-  getInternalLinks = async (url: string, html: any) => {
-    const baseUrl = await this.getBaseUrl(url);
-    console.log("baseUrl:", baseUrl);
+  getInternalLinks = async (response: Response) => {
+    const responseURL = new URL(response.responseURL).origin;
 
-    const links = await this.getLinks(url, html);
+    const links = await this.getLinks(responseURL, response.response);
 
-    const internalLinks = links.filter((link) => link.startsWith(baseUrl));
+    const internalLinks = links.filter((link) => link.startsWith(responseURL));
 
     const uniqueLinks = [...new Set(internalLinks)];
-    console.log("uniqueLinks:", uniqueLinks);
 
     return uniqueLinks;
   };
@@ -290,8 +289,8 @@ This function is used to get SEO data from a given URL.
 */
   getSeoData = async (url: string) => {
     if (url) {
-      const html = await this.getHTML(url);
-      const seoData = this.getSeoDataFromHTML(html, url);
+      const response = (await this.getResponse(url)).response.data;
+      const seoData = this.getSeoDataFromHTML(response, url);
       return seoData;
     }
   };
@@ -303,15 +302,15 @@ Generates a sitemap from a given URL and writes it to a file at a specified path
 @param {string} path - The path to write the generated sitemap to
 @returns {Promise<any>} - A promise that resolves to the file that was written to disk.
 */
-  sitemapGenerator = async (url: string, path: string) => {
-    const sitemapLinksSet = await xmlSiteMapGenerator.sitemapLinksGenerator(
-      url
-    );
-    const sitemap = await xmlSiteMapGenerator.addLinksToXML(sitemapLinksSet);
-    const file = await xmlSiteMapGenerator.writeSitemap(sitemap, path);
+  // sitemapGenerator = async (url: string, path: string) => {
+  //   const sitemapLinksSet = await xmlSiteMapGenerator.sitemapLinksGenerator(
+  //     url
+  //   );
+  //   const sitemap = await xmlSiteMapGenerator.addLinksToXML(sitemapLinksSet);
+  //   const file = await xmlSiteMapGenerator.writeSitemap(sitemap, path);
 
-    return file;
-  };
+  //   return file;
+  // };
 
   /**
 
@@ -321,7 +320,7 @@ Extract images from an HTML page
 */
   getImages = async (url: string): Promise<Image[]> => {
     const images: Image[] = [];
-    const $ = cheerio.load(await this.getHTML(url));
+    const $ = cheerio.load((await this.getResponse(url)).response.data);
 
     $("img").each((i, element) => {
       const alt = $(element).attr("alt") || "";
@@ -344,7 +343,7 @@ Extract headings from an HTML page
     url: string
   ): Promise<Array<{ tag: string; text: string }>> => {
     const headings: Array<{ tag: string; text: string }> = [];
-    const $ = cheerio.load(await this.getHTML(url));
+    const $ = cheerio.load((await this.getResponse(url)).response.data);
 
     $("h1, h2, h3, h4, h5, h6").each((i, element) => {
       headings.push({
@@ -363,7 +362,7 @@ Get the depth of a URL based on its subfolders.
 @returns {Promise<number|null>} - A promise that resolves to the number of subfolders in the URL, or null if the URL is invalid or has no subfolders.
 */
 
-  getUrlPathDepth = (url_param: string): number | null => {
+  getUrlPathDepth = (url_param: string): number => {
     const url = new URL(url_param);
 
     let path = url.pathname;

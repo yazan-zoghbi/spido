@@ -2,18 +2,17 @@ import fs from "fs";
 import xmlFormatter from "xml-formatter";
 import { Utils } from "./core/utils";
 
-
 // xml sitemap generator using crawler.cjs
 export const sitemapLinksGenerator = async (url: string) => {
   const utils = new Utils();
-  const html = await utils.getHTML(url);
-  const internalLinks = await utils.getInternalLinks(url, html);
-
-  const sitemap = internalLinks.map((link: string) => {
-    return `<url><loc>${link}</loc></url>`;
-  });
-
-  return sitemap;
+  const response = await utils.getResponse(url);
+  const internalLinks = await utils.getInternalLinks(response);
+  if (internalLinks) {
+    const sitemap = internalLinks.map((link: string) => {
+      return `<url><loc>${link}</loc></url>`;
+    });
+    return sitemap;
+  }
 };
 
 // convert sitemapGenerator to xml
