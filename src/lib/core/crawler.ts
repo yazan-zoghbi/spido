@@ -4,14 +4,14 @@ import { Utils, Response } from "./utils";
 
 const utils = new Utils();
 
-interface CacheEntry {
+export interface CacheEntry {
   response: Response;
   internalLinks: string[];
   isValid: boolean;
   pathDepth: number;
 }
 
-type Cache = {
+export type Cache = {
   [url: string]: CacheEntry;
 };
 
@@ -81,7 +81,7 @@ export class Spido {
   private async handleResponse(url: string, response: Response) {
     try {
       if (!this.cache[url]) {
-        const SEOData = await utils.getSeoDataFromHTML(response.response, url);
+        const SEOData = await utils.getSeoDataFromResponse(response.response, url);
         const cacheResponse: CacheEntry = {
           response: response,
           internalLinks: await utils.getInternalLinks(response),
@@ -117,7 +117,7 @@ export class Spido {
   //fetching single page seo data from url & resolve promise with the data
   async fetch(url: string) {
     const response = (await utils.getResponse(url)).response.data;
-    const seoData = await utils.getSeoDataFromHTML(response, url);
+    const seoData = await utils.getSeoDataFromResponse(response, url);
     return this.websiteSeoData.push(seoData);
   }
 

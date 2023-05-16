@@ -37,7 +37,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Syrian-Open-Source/spido.git"
+    "url": "git+https://github.com/yazan-zoghbi/spido.git"
   },
   "keywords": [
     "SEO",
@@ -49,9 +49,9 @@
   "author": "Yazan Zoghbi",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Syrian-Open-Source/Spido/issues"
+    "url": "https://github.com/yazan-zoghbi/spido/issues"
   },
-  "homepage": "https://github.com/Syrian-Open-Source/Spido#readme",
+  "homepage": "https://github.com/yazan-zoghbi/spido#readme",
   "directories": {
     "lib": "lib",
     "test": "test"
