@@ -5,13 +5,14 @@ const fetch = require("node-fetch");
 // import * as xmlSiteMapGenerator from "../xml-sitemap-generator";
 
 // SEO DATA type
-type seoData = {
+export type seoData = {
   url: string;
   title: string;
   description: string | undefined;
   canonical: string | undefined;
   robots: string | undefined;
   links: number;
+  status: number;
 };
 
 // Image type
@@ -200,7 +201,7 @@ Get links from a website sitemap.
 @property {string} robots - the robots instructions of the HTML source code.
 @property {number} links - the number of links in the HTML source code.
 */
-  getSeoDataFromHTML = async (response: AxiosResponse, url: string) => {
+  getSeoDataFromResponse = async (response: AxiosResponse, url: string) => {
     const $ = cheerio.load(response.data);
     const seoData: seoData = {
       url: url.toString(),
@@ -209,6 +210,7 @@ Get links from a website sitemap.
       canonical: $("link[rel='canonical']").attr("href"),
       robots: $("meta[name='robots']").attr("content"),
       links: (await this.getLinks(url, response)).length,
+      status: response.status
     };
 
     return seoData;
@@ -290,7 +292,7 @@ This function is used to get SEO data from a given URL.
   getSeoData = async (url: string) => {
     if (url) {
       const response = (await this.getResponse(url)).response.data;
-      const seoData = this.getSeoDataFromHTML(response, url);
+      const seoData = this.getSeoDataFromResponse(response, url);
       return seoData;
     }
   };
