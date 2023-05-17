@@ -1,30 +1,24 @@
-import axios, { AxiosResponse } from "axios";
 import { Queue } from "./queue";
-import { Utils, Response } from "./utils";
-
-const utils = new Utils();
-
-export interface CacheEntry {
-  response: Response;
-  internalLinks: string[];
-  isValid: boolean;
-  pathDepth: number;
-}
-
-export type Cache = {
-  [url: string]: CacheEntry;
-};
+import { Utils } from "./utils";
+import {
+  Cache,
+  CachedEntry,
+  CrawlerOptions,
+  HttpResponse,
+  Metadata,
+} from "./interfaces";
 
 //define main spido crawler module class
 export class Spido {
-  queue: Queue;
-  url: string;
-  options: { internalLinks: boolean; sitemap: boolean; depth: number };
-  visited: Set<string>;
-  websiteSeoData: any[];
-  cache: Cache;
+  private queue: Queue;
+  private url: string;
+  private options: CrawlerOptions;
+  private visited: Set<string>;
+  private cache: Cache;
+  private utils: Utils;
+  websiteSeoData: Metadata[];
 
-  constructor(url: string, options: object) {
+  constructor(url: string, options: CrawlerOptions) {
     this.url = url;
     this.options = {
       internalLinks: true,
@@ -36,28 +30,19 @@ export class Spido {
     this.queue = new Queue();
     this.visited = new Set();
     this.websiteSeoData = [];
+    this.utils = new Utils();
   }
 
   async crawl() {
-    const startingURL = this.url;
-    const options = this.options;
-
-    const baseURL = await utils.getBaseUrl(startingURL);
+    const baseURL = await this.utils.getBaseUrl(this.url);
     this.queue.enqueue(baseURL);
 
     while (!this.queue.isEmpty()) {
       const currentURL = this.queue.dequeue();
-      if (!currentURL) {
-        continue;
-      }
-
-      if (this.visited.has(currentURL)) {
-        continue;
-      }
-
       if (
-        options.depth &&
-        (utils.getUrlPathDepth(currentURL) ?? 0) > options.depth
+        !currentURL ||
+        this.visited.has(currentURL) ||
+        this.isDepthExceeded(currentURL)
       ) {
         continue;
       }
@@ -66,7 +51,7 @@ export class Spido {
       if (cachedResponse) {
         await this.handleResponse(currentURL, cachedResponse.response);
       } else {
-        const response = await utils.getResponse(currentURL);
+        const response = await this.utils.getResponse(currentURL);
         await this.handleResponse(currentURL, response);
       }
       this.visited.add(currentURL);
@@ -78,22 +63,27 @@ export class Spido {
     return this.websiteSeoData;
   }
 
-  private async handleResponse(url: string, response: Response) {
+  private isDepthExceeded(url: string): boolean {
+    const depth = this.options.depth;
+    return depth !== 0 && this.utils.getUrlPathDepth(url) > depth;
+  }
+
+  private async handleResponse(url: string, response: HttpResponse) {
     try {
       if (!this.cache[url]) {
-        const SEOData = await utils.getSeoDataFromResponse(response.response, url);
-        const cacheResponse: CacheEntry = {
+        const SEOData = await this.utils.getSeoDataFromResponse(
+          response.response,
+          url
+        );
+        const cacheResponse: CachedEntry = {
           response: response,
-          internalLinks: await utils.getInternalLinks(response),
-          isValid: await utils.isValidUrl(response.response.status),
-          pathDepth: utils.getUrlPathDepth(url),
+          internalLinks: await this.utils.getInternalLinks(response),
+          isValid: await this.utils.isValidUrl(response.response.status),
+          pathDepth: this.utils.getUrlPathDepth(url),
         };
         this.cache[url] = cacheResponse;
         this.websiteSeoData.push(SEOData);
         await this.enqueueURLs(cacheResponse.internalLinks);
-        return;
-      } else {
-        return;
       }
     } catch (error) {
       console.log(error);
@@ -102,31 +92,28 @@ export class Spido {
 
   private async enqueueURLs(urls: string[]) {
     for (const currentURL of urls) {
-      if (this.visited.has(currentURL)) {
-        continue;
+      if (
+        !this.visited.has(currentURL) &&
+        !this.queue.isURLInQueue(currentURL)
+      ) {
+        this.queue.enqueue(currentURL);
       }
-
-      if (this.queue.isURLInQueue(currentURL)) {
-        continue;
-      }
-
-      this.queue.enqueue(currentURL);
     }
   }
 
   //fetching single page seo data from url & resolve promise with the data
   async fetch(url: string) {
-    const response = (await utils.getResponse(url)).response.data;
-    const seoData = await utils.getSeoDataFromResponse(response, url);
+    const response = (await this.utils.getResponse(url)).response.data;
+    const seoData = await this.utils.getSeoDataFromResponse(response, url);
     return this.websiteSeoData.push(seoData);
   }
 
   private async internalLinksEnabled(url: string) {
-    const response = await utils.getResponse(url);
-    const internalLinks = await utils.getInternalLinks(response);
+    const response = await this.utils.getResponse(url);
+    const internalLinks = await this.utils.getInternalLinks(response);
 
     internalLinks.forEach(async (link: string) => {
-      const isValidLink = await utils.isValidUrl(response.response.status);
+      const isValidLink = await this.utils.isValidUrl(response.response.status);
       if (isValidLink && !this.queue.urls.includes(link)) {
         this.queue.enqueue(link);
       }
