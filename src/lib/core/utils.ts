@@ -34,7 +34,7 @@ export class Utils {
 
       if (response.response.status >= 200 && response.response.status < 400) {
         // If the response status is valid, return the base URL
-        return new URL(responseURL).href;
+        return new URL(responseURL).origin;
       } else {
         // If the response status is not valid, throw an error
         throw new Error(`Invalid URL! - ${url}`);
@@ -171,7 +171,7 @@ export class Utils {
     response: AxiosResponse
   ): Promise<string[]> => {
     const $ = cheerio.load(response.data);
-    const baseUrl = new URL(url).origin;
+    const baseUrl = url;
 
     const links: string[] = [];
     $("a").each((i: any, link: any) => {
