@@ -7,7 +7,7 @@
     "rootDir": "src",
     "outDir": "dist",
     "strict": true,
-    "types": ["node"],
+    "types": ["node", "jest"],
     "esModuleInterop": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
