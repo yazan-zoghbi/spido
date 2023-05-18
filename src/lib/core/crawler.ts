@@ -10,15 +10,15 @@ import {
 
 //define main spido crawler module class
 export class Spido {
-  private queue: Queue;
   private url: string;
   private options: CrawlerOptions;
-  private visited: Set<string>;
   private cache: Cache;
   private utils: Utils;
+  visited: Set<string>;
+  queue: Queue;
   websiteSeoData: Metadata[];
 
-  constructor(url: string, options: CrawlerOptions) {
+  constructor(url: string, options?: CrawlerOptions) {
     this.url = url;
     this.options = {
       internalLinks: true,
@@ -57,9 +57,6 @@ export class Spido {
       this.visited.add(currentURL);
     }
 
-    console.log("crawling finished, visited URLs: ", this.visited.size);
-    console.log(this.visited);
-
     return this.websiteSeoData;
   }
 
@@ -68,7 +65,7 @@ export class Spido {
     return depth !== 0 && this.utils.getUrlPathDepth(url) > depth;
   }
 
-  private async handleResponse(url: string, response: HttpResponse) {
+  async handleResponse(url: string, response: HttpResponse) {
     try {
       if (!this.cache[url]) {
         const SEOData = await this.utils.getSeoDataFromResponse(
