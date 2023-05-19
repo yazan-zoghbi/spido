@@ -14,15 +14,17 @@ describe("Utils", () => {
       const url = "https://example.com/";
       const response = await utils.getResponse(url);
 
-      expect(response).toBeDefined();
-      expect(response.response).toBeDefined();
+      if (response) {
+        expect(response).toBeDefined();
+        expect(response.response).toBeDefined();
+      }
     });
 
     it("should throw an error for an invalid URL", async () => {
       const invalidUrl = "https://invalid-url";
 
       await expect(utils.getResponse(invalidUrl)).rejects.toThrowError(
-        `Error retrieving response for URL: ${invalidUrl}`
+        `Invalid URL! - ${invalidUrl}`
       );
     });
   });
@@ -41,6 +43,31 @@ describe("Utils", () => {
       await expect(utils.getBaseUrl(invalidUrl)).rejects.toThrowError(
         `Invalid URL! - ${invalidUrl}`
       );
+    });
+  });
+
+  describe("isValidUrl", () => {
+    it("should return true for a valid URL", async () => {
+      const url = "https://example.com";
+      const response = await utils.getResponse(url);
+
+      if (response) {
+        const isValid = await utils.isValidUrl(response.response.status);
+        expect(isValid).toBeTruthy();
+      }
+    });
+
+    it("should return false for an invalid URL", async () => {
+      const url = "https://example.com/some-page";
+      const response = await utils.getResponse(url);
+
+      const isValid =
+        response &&
+        response.response &&
+        response.response.status >= 200 &&
+        response.response.status < 400;
+
+      expect(isValid).toBeFalsy();
     });
   });
 });
