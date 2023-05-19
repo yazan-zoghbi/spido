@@ -6,7 +6,9 @@ import { Utils } from "./core/utils";
 export const sitemapLinksGenerator = async (url: string) => {
   const utils = new Utils();
   const response = await utils.getResponse(url);
-  const internalLinks = await utils.getInternalLinks(response);
+  const responseData = response?.response.data;
+
+  const internalLinks = await utils.getInternalLinks(responseData);
   if (internalLinks) {
     const sitemap = internalLinks.map((link: string) => {
       return `<url><loc>${link}</loc></url>`;

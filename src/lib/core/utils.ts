@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from "axios";
+import axios, { AxiosError, AxiosResponse } from "axios";
 import * as cheerio from "cheerio";
 import { HttpResponse, Image, Metadata } from "./interfaces";
 
@@ -11,13 +11,23 @@ export class Utils {
    * @returns {Promise<HttpResponse>} - A Promise that resolves to an object containing the response and the response URL.
    * @throws {Error} - If there is an error with the Axios request, an error will be thrown.
    */
-  getResponse = async (url: string): Promise<HttpResponse> => {
+  getResponse = async (url: string): Promise<HttpResponse | undefined> => {
     try {
       const response = await axios.get(url);
       const responseURL = response.request.res.responseUrl;
-      return { response, responseURL };
-    } catch (error) {
-      throw new Error(`Error retrieving response for URL: ${url}`);
+
+      if (response.status >= 200 && response.status < 400) {
+        return { response, responseURL };
+      }
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response) {
+        const response = error.response;
+        const responseURL = response?.request.res.responseUrl;
+
+        return { response, responseURL };
+      } else {
+        throw new Error(`Invalid URL! - ${url}`);
+      }
     }
   };
 
@@ -30,16 +40,20 @@ export class Utils {
   getBaseUrl = async (url: string): Promise<string> => {
     try {
       const response = await this.getResponse(url);
+      if (!response) {
+        throw new Error(`Invalid URL! - ${url}`);
+      }
+
       const responseURL = response.responseURL;
 
       if (response.response.status >= 200 && response.response.status < 400) {
         // If the response status is valid, return the base URL
-        return new URL(responseURL).href;
+        return new URL(responseURL).origin;
       } else {
         // If the response status is not valid, throw an error
         throw new Error(`Invalid URL! - ${url}`);
       }
-    } catch (err: unknown) {
+    } catch (err) {
       throw new Error(`Invalid URL! - ${url}`);
     }
   };
@@ -103,6 +117,11 @@ export class Utils {
     try {
       const sitemapUrl = await this.getSitemap(url);
       const httpResponse = await this.getResponse(sitemapUrl);
+
+      if (!httpResponse) {
+        throw new Error(`Invalid response! - ${url}`);
+      }
+
       return httpResponse.response.status === 200;
     } catch (error) {
       return false;
@@ -118,8 +137,14 @@ export class Utils {
    */
   getLinksFromSitemap = async (url: string): Promise<string[]> => {
     const sitemapUrl = await this.getSitemap(url);
-    const response = (await this.getResponse(sitemapUrl)).response.data;
-    const $ = cheerio.load(response);
+    const response = await this.getResponse(sitemapUrl);
+
+    if (!response) {
+      throw new Error(`Invalid response! - ${url}`);
+    }
+
+    const responseData = response.response.data;
+    const $ = cheerio.load(responseData);
     const links: string[] = [];
     $("loc").each((i: number, link: cheerio.Element) => {
       links.push($(link).text());
@@ -171,7 +196,7 @@ export class Utils {
     response: AxiosResponse
   ): Promise<string[]> => {
     const $ = cheerio.load(response.data);
-    const baseUrl = new URL(url).origin;
+    const baseUrl = url;
 
     const links: string[] = [];
     $("a").each((i: any, link: any) => {
@@ -241,9 +266,10 @@ export class Utils {
    * @returns {Promise<Image[]>} - A Promise that resolves to an array of objects representing images in the HTML page. Each object has an `alt` property representing the alternative text of the image and a `src` property representing the source URL of the image.
    */
   getImages = async (url: string): Promise<Image[]> => {
-    const { response } = await this.getResponse(url);
+    const response = await this.getResponse(url);
+    const responseData = response?.response.data;
     const images: Image[] = [];
-    const $ = cheerio.load(response.data);
+    const $ = cheerio.load(responseData);
 
     $("img").each((i, element) => {
       const alt = $(element).attr("alt") || "";
@@ -266,9 +292,10 @@ export class Utils {
   getHeadings = async (
     url: string
   ): Promise<Array<{ tag: string; text: string }>> => {
-    const { response } = await this.getResponse(url);
+    const response = await this.getResponse(url);
+    const responseData = response?.response.data;
     const headings: Array<{ tag: string; text: string }> = [];
-    const $ = cheerio.load(response.data);
+    const $ = cheerio.load(responseData);
 
     $("h1, h2, h3, h4, h5, h6").each((i, element) => {
       headings.push({

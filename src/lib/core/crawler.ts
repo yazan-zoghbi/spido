@@ -10,15 +10,15 @@ import {
 
 //define main spido crawler module class
 export class Spido {
-  private queue: Queue;
   private url: string;
   private options: CrawlerOptions;
-  private visited: Set<string>;
   private cache: Cache;
   private utils: Utils;
+  visited: Set<string>;
+  queue: Queue;
   websiteSeoData: Metadata[];
 
-  constructor(url: string, options: CrawlerOptions) {
+  constructor(url: string, options?: CrawlerOptions) {
     this.url = url;
     this.options = {
       internalLinks: true,
@@ -52,13 +52,13 @@ export class Spido {
         await this.handleResponse(currentURL, cachedResponse.response);
       } else {
         const response = await this.utils.getResponse(currentURL);
-        await this.handleResponse(currentURL, response);
+
+        if (response) {
+          await this.handleResponse(currentURL, response);
+        }
       }
       this.visited.add(currentURL);
     }
-
-    console.log("crawling finished, visited URLs: ", this.visited.size);
-    console.log(this.visited);
 
     return this.websiteSeoData;
   }
@@ -68,7 +68,7 @@ export class Spido {
     return depth !== 0 && this.utils.getUrlPathDepth(url) > depth;
   }
 
-  private async handleResponse(url: string, response: HttpResponse) {
+  async handleResponse(url: string, response: HttpResponse) {
     try {
       if (!this.cache[url]) {
         const SEOData = await this.utils.getSeoDataFromResponse(
@@ -103,17 +103,23 @@ export class Spido {
 
   //fetching single page seo data from url & resolve promise with the data
   async fetch(url: string) {
-    const response = (await this.utils.getResponse(url)).response.data;
-    const seoData = await this.utils.getSeoDataFromResponse(response, url);
+    const response = await this.utils.getResponse(url);
+    const responseData = response?.response.data;
+
+    const seoData = await this.utils.getSeoDataFromResponse(responseData, url);
     return this.websiteSeoData.push(seoData);
   }
 
   private async internalLinksEnabled(url: string) {
     const response = await this.utils.getResponse(url);
-    const internalLinks = await this.utils.getInternalLinks(response);
+    const responseData = response?.response.data;
+
+    const internalLinks = await this.utils.getInternalLinks(responseData);
 
     internalLinks.forEach(async (link: string) => {
-      const isValidLink = await this.utils.isValidUrl(response.response.status);
+      const isValidLink = await this.utils.isValidUrl(
+        responseData.response.status
+      );
       if (isValidLink && !this.queue.urls.includes(link)) {
         this.queue.enqueue(link);
       }
