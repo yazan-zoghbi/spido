@@ -52,7 +52,10 @@ export class Spido {
         await this.handleResponse(currentURL, cachedResponse.response);
       } else {
         const response = await this.utils.getResponse(currentURL);
-        await this.handleResponse(currentURL, response);
+
+        if (response) {
+          await this.handleResponse(currentURL, response);
+        }
       }
       this.visited.add(currentURL);
     }
@@ -100,17 +103,23 @@ export class Spido {
 
   //fetching single page seo data from url & resolve promise with the data
   async fetch(url: string) {
-    const response = (await this.utils.getResponse(url)).response.data;
-    const seoData = await this.utils.getSeoDataFromResponse(response, url);
+    const response = await this.utils.getResponse(url);
+    const responseData = response?.response.data;
+
+    const seoData = await this.utils.getSeoDataFromResponse(responseData, url);
     return this.websiteSeoData.push(seoData);
   }
 
   private async internalLinksEnabled(url: string) {
     const response = await this.utils.getResponse(url);
-    const internalLinks = await this.utils.getInternalLinks(response);
+    const responseData = response?.response.data;
+
+    const internalLinks = await this.utils.getInternalLinks(responseData);
 
     internalLinks.forEach(async (link: string) => {
-      const isValidLink = await this.utils.isValidUrl(response.response.status);
+      const isValidLink = await this.utils.isValidUrl(
+        responseData.response.status
+      );
       if (isValidLink && !this.queue.urls.includes(link)) {
         this.queue.enqueue(link);
       }
