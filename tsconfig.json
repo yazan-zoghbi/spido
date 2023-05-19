@@ -2,15 +2,17 @@
   "compilerOptions": {
     "target": "ES2022",
     "module": "CommonJS",
-    "lib": ["ES6", "ES2015", "DOM", "ES2018"],
+    "lib": ["ES6", "ES2015", "DOM", "ES2018", "ES2020"],
     "declaration": true,
     "rootDir": "src",
     "outDir": "dist",
     "strict": true,
-    "types": ["node"],
+    "types": ["node", "jest"],
     "esModuleInterop": true,
+    "moduleResolution": "node",
     "resolveJsonModule": true,
     "downlevelIteration": true
-  }, 
-  "exclude":[ "src/test"],
+  },
+  "exclude": ["src/test", "dist"],
+  "include": ["src/**/*.ts"]
 }

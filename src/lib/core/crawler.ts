@@ -1,119 +1,130 @@
-import Queue from "./queue";
-import * as utils from "./utils";
+import { Queue } from "./queue";
+import { Utils } from "./utils";
+import {
+  Cache,
+  CachedEntry,
+  CrawlerOptions,
+  HttpResponse,
+  Metadata,
+} from "./interfaces";
 
 //define main spido crawler module class
 export class Spido {
-  queue: Queue;
-  url: string;
-  options: { internalLinks: boolean; sitemap: boolean };
+  private url: string;
+  private options: CrawlerOptions;
+  private cache: Cache;
+  private utils: Utils;
   visited: Set<string>;
-  websiteSeoData: any[];
-  constructor(url: string, options: object) {
+  queue: Queue;
+  websiteSeoData: Metadata[];
+
+  constructor(url: string, options?: CrawlerOptions) {
     this.url = url;
     this.options = {
       internalLinks: true,
       sitemap: false,
+      depth: 0,
     };
+    this.cache = {};
     Object.assign(this.options, options);
     this.queue = new Queue();
     this.visited = new Set();
     this.websiteSeoData = [];
+    this.utils = new Utils();
   }
 
-  //get the url from the queue and remove it from the queue after
-  //it's been visited and add it to the visited set to avoid duplicates
-  //in the queue and visited set respectively
-
   async crawl() {
-    //if url not defined throw error
-    if (!this.url) {
-      throw new Error("url not defined! please define url");
-    }
+    const baseURL = await this.utils.getBaseUrl(this.url);
+    this.queue.enqueue(baseURL);
 
-    const isValidUrl = await utils.isValidUrl(this.url);
-    if (!isValidUrl) {
-      throw new Error("Invalid url! - " + this.url);
-    }
-
-    const baseUrl = utils.getBaseUrl(this.url);
-    this.queue.enqueue(baseUrl);
-
-    //if internal links are enabled
-    if (this.options.internalLinks) {
-      await this.internalLinksEnabled(this.url);
-    }
-
-    //if sitemap is enabled
-    if (this.options.sitemap) {
-      const isSitemap = await utils.isSitemap(this.url);
-
-      if (!isSitemap) {
-        throw new Error("Invalid sitemap url! - " + utils.getSitemap(this.url));
+    while (!this.queue.isEmpty()) {
+      const currentURL = this.queue.dequeue();
+      if (
+        !currentURL ||
+        this.visited.has(currentURL) ||
+        this.isDepthExceeded(currentURL)
+      ) {
+        continue;
       }
 
-      const sitemapLinks = await utils.getLinksFromSitemap(this.url);
-      Promise.allSettled(
-        sitemapLinks.map(async (link) => {
-          if (!this.queue.urls.includes(link)) {
-            this.queue.enqueue(link);
-          }
-        })
-      );
-    }
+      const cachedResponse = this.cache[currentURL];
+      if (cachedResponse) {
+        await this.handleResponse(currentURL, cachedResponse.response);
+      } else {
+        const response = await this.utils.getResponse(currentURL);
 
-    //if all options are disabled
-    if (!this.options.internalLinks && !this.options.sitemap) {
-      throw new Error("No options enabled!");
-    }
-
-    //while visited urls are less than the queue urls
-    while (
-      this.queue.urls.length > 0 &&
-      this.queue.urls.length != this.visited.size
-    ) {
-      console.log("visited urls: " + this.visited.size);
-      console.log("queue urls: " + this.queue.urls.length);
-
-      for (let i = 0; i < this.queue.urls.length; i++) {
-        let currentUrl = this.queue.urls[i];
-        if (!this.visited.has(currentUrl)) {
-          console.log("visiting url: " + currentUrl + ", i: " + i);
-          const html = await utils.getHTML(currentUrl);
-          const internalLinks = await utils.getInternalLinks(currentUrl, html);
-          internalLinks.forEach(async (link) => {
-            const isValidLink = await utils.isValidUrl(link);
-            if (
-              isValidLink &&
-              !this.queue.urls.includes(link) &&
-              !this.visited.has(link)
-            ) {
-              this.queue.enqueue(link);
-            }
-          });
-          this.visited.add(currentUrl);
+        if (response) {
+          await this.handleResponse(currentURL, response);
         }
-        await this.fetch(currentUrl);
+      }
+      this.visited.add(currentURL);
+    }
+
+    return this.websiteSeoData;
+  }
+
+  private isDepthExceeded(url: string): boolean {
+    const depth = this.options.depth;
+    return depth !== 0 && this.utils.getUrlPathDepth(url) > depth;
+  }
+
+  async handleResponse(url: string, response: HttpResponse) {
+    try {
+      if (!this.cache[url]) {
+        const SEOData = await this.utils.getSeoDataFromResponse(
+          response.response,
+          url
+        );
+        const cacheResponse: CachedEntry = {
+          response: response,
+          internalLinks: await this.utils.getInternalLinks(response),
+          isValid: await this.utils.isValidUrl(response.response.status),
+          pathDepth: this.utils.getUrlPathDepth(url),
+        };
+        this.cache[url] = cacheResponse;
+        this.websiteSeoData.push(SEOData);
+        await this.enqueueURLs(cacheResponse.internalLinks);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  private async enqueueURLs(urls: string[]) {
+    for (const currentURL of urls) {
+      if (
+        !this.visited.has(currentURL) &&
+        !this.queue.isURLInQueue(currentURL)
+      ) {
+        this.queue.enqueue(currentURL);
       }
     }
-    console.log("crawling finished");
   }
 
   //fetching single page seo data from url & resolve promise with the data
   async fetch(url: string) {
-    const html = await utils.getHTML(url);
-    const seoData = await utils.getSeoDataFromHTML(html, url);
+    const response = await this.utils.getResponse(url);
+    const responseData = response?.response.data;
+
+    const seoData = await this.utils.getSeoDataFromResponse(responseData, url);
     return this.websiteSeoData.push(seoData);
   }
 
   private async internalLinksEnabled(url: string) {
-    const html = await utils.getHTML(url);
-    const internalLinks = await utils.getInternalLinks(url, html);
+    const response = await this.utils.getResponse(url);
+    const responseData = response?.response.data;
+
+    const internalLinks = await this.utils.getInternalLinks(responseData);
 
     internalLinks.forEach(async (link: string) => {
-      const isValidLink = await utils.isValidUrl(link);
+      const isValidLink = await this.utils.isValidUrl(
+        responseData.response.status
+      );
       if (isValidLink && !this.queue.urls.includes(link)) {
         this.queue.enqueue(link);
       }
     });
   }
 }
+
+module.exports = { Spido };

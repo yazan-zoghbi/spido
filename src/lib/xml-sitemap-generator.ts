@@ -1,18 +1,20 @@
 import fs from "fs";
-import { Spido } from "..";
-import * as utils from "./core/utils";
 import xmlFormatter from "xml-formatter";
+import { Utils } from "./core/utils";
 
 // xml sitemap generator using crawler.cjs
 export const sitemapLinksGenerator = async (url: string) => {
-  const html = await utils.getHTML(url);
-  const internalLinks = await utils.getInternalLinks(url, html);
+  const utils = new Utils();
+  const response = await utils.getResponse(url);
+  const responseData = response?.response.data;
 
-  const sitemap = internalLinks.map((link: string) => {
-    return `<url><loc>${link}</loc></url>`;
-  });
-
-  return sitemap;
+  const internalLinks = await utils.getInternalLinks(responseData);
+  if (internalLinks) {
+    const sitemap = internalLinks.map((link: string) => {
+      return `<url><loc>${link}</loc></url>`;
+    });
+    return sitemap;
+  }
 };
 
 // convert sitemapGenerator to xml

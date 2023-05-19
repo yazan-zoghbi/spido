@@ -1,340 +1,329 @@
-import axios from "axios";
-import cheerio from "cheerio";
+import axios, { AxiosError, AxiosResponse } from "axios";
+import * as cheerio from "cheerio";
+import { HttpResponse, Image, Metadata } from "./interfaces";
 
-import * as xmlSiteMapGenerator from "../xml-sitemap-generator";
+export class Utils {
+  /**
+   * Retrieves the HTML from a specified URL using Axios.
+   * @async
+   * @function
+   * @param {string} url - The URL to retrieve the HTML from.
+   * @returns {Promise<HttpResponse>} - A Promise that resolves to an object containing the response and the response URL.
+   * @throws {Error} - If there is an error with the Axios request, an error will be thrown.
+   */
+  getResponse = async (url: string): Promise<HttpResponse | undefined> => {
+    try {
+      const response = await axios.get(url);
+      const responseURL = response.request.res.responseUrl;
 
-// SEO DATA type
-export type seoData = {
-  url: string;
-  title: string;
-  description: string | undefined;
-  canonical: string | undefined;
-  robots: string | undefined;
-  links: number;
-};
+      if (response.status >= 200 && response.status < 400) {
+        return { response, responseURL };
+      }
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response) {
+        const response = error.response;
+        const responseURL = response?.request.res.responseUrl;
 
-// Image type
-export interface Image {
-  alt: string;
-  src: string;
-}
-
-axios.defaults.headers.get = { "User-Agent": "Axios 0.21.1" };
-
-/**
-
-Extracts the hostname from a URL
-@param {string} url - The URL to extract the hostname from
-@returns {string} - The hostname of the URL
-@throws {Error} - If the url parameter is not defined
-*/
-export const getHostname = (url: string) => {
-  if (!url) {
-  throw new Error("url not defined");
-  }
-  const hostname = url.split("/")[2];
-  return hostname.replace("www.", "");
+        return { response, responseURL };
+      } else {
+        throw new Error(`Invalid URL! - ${url}`);
+      }
+    }
   };
 
   /**
-  
-  Extracts the base URL from a URL
-  @param {string} url - The URL to extract the base URL from
-  @returns {string} - The base URL of the URL
-  */
-  export const getBaseUrl = (url: string) => {
-  const hostname = getHostname(url);
-  return `https://${hostname}`;
+   * Extracts the base URL from a given URL.
+   * @param {string} url - The URL to extract the base URL from.
+   * @returns {Promise<string>} - The base URL of the URL.
+   * @throws {Error} - If the URL is invalid or the response status is not valid.
+   */
+  getBaseUrl = async (url: string): Promise<string> => {
+    try {
+      const response = await this.getResponse(url);
+      if (!response) {
+        throw new Error(`Invalid URL! - ${url}`);
+      }
+
+      const responseURL = response.responseURL;
+
+      if (response.response.status >= 200 && response.response.status < 400) {
+        // If the response status is valid, return the base URL
+        return new URL(responseURL).origin;
+      } else {
+        // If the response status is not valid, throw an error
+        throw new Error(`Invalid URL! - ${url}`);
+      }
+    } catch (err) {
+      throw new Error(`Invalid URL! - ${url}`);
+    }
   };
 
-/**
+  /**
+   * Checks if the given URL is valid and the response is OK.
+   * @param {number} status - The status code of the response to be checked.
+   * @returns {Promise<boolean>} - A Promise that resolves to a boolean indicating whether the URL is valid and the response is OK.
+   * @example
+   * isValidUrl(200)
+   *   .then(valid => console.log(valid)); // returns true or false
+   */
+  isValidUrl = async (status: number): Promise<boolean> => {
+    try {
+      if (status === 200) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error) && error.response?.status) {
+        const status = error.response.status;
 
-Extracts the path from a URL
-@param {string} url - The URL to extract the path from
-@returns {string} - The path of the URL
-*/
-export const getPath = async (url: string) => {
-  const baseUrl = getBaseUrl(url);
-  const path = baseUrl.replace(baseUrl, "/");
-  return path;
-};
+        if ([300, 301, 302, 303, 304, 305, 306, 307, 308].includes(status)) {
+          try {
+            const response = await axios.get(error.response.headers.location);
 
-/**
-
-@function isValidUrl
-@async
-@param {string} url - The URL to be checked.
-@returns {Promise<boolean>} Returns a Promise that resolves to a boolean indicating whether the URL is valid and the response is OK.
-@description
-This function uses the Axios library to check if the given URL is valid and the response is OK. If the response is a redirect (status code 300-308), it will follow the redirect and check the status code of the redirected URL.
-@example
-isValidUrl('https://www.example.com')
-.then(valid => console.log(valid)) // returns true or false
-*/
-export const isValidUrl = async (url: string) => {
-  const validResponse = await axios
-    .request({
-      url,
-      maxRedirects: 0,
-    })
-    .catch(async (error: any) => {
-      if (
-        error.response.status === 300 ||
-        301 ||
-        302 ||
-        303 ||
-        304 ||
-        305 ||
-        306 ||
-        307 ||
-        308
-      ) {
-        return await axios
-          .get(error.response.headers.location)
-          .then((response: any) => {
             if (response.status === 200) {
               return true;
             } else {
               return false;
             }
-          });
+          } catch {
+            return false;
+          }
+        }
       }
-    });
-  return validResponse;
-};
-
-/**
-
-Returns the sitemap URL of a given URL.
-@async
-@function
-@param {string} url - The URL to retrieve the sitemap URL from.
-@returns {string} The sitemap URL.
-*/
-export const getSitemap = async (url: string) => {
-  const baseUrl = getBaseUrl(url);
-  return `${baseUrl}/sitemap.xml`;
-};
-
-/**
-
-Check if sitemap URL is valid and response is 200
-@async
-@function isSitemap
-@param {string} url - The sitemap URL to check
-@returns {boolean} - Returns true if the sitemap URL is valid and response is 200, false otherwise
-*/
-export const isSitemap = async (url: string) => {
-  const sitemapUrl = await getSitemap(url);
-  return await axios
-    .get(sitemapUrl)
-    .then((response: any) => {
-      return response.status === 200;
-    })
-    .catch(() => {
       return false;
-    });
-};
-
-/**
-
-Retrieve the HTML from a specified URL using Axios.
-@async
-@function
-@param {string} url - The URL to retrieve the HTML from.
-@returns {Promise<string>} The HTML data retrieved from the URL.
-@throws {Error} If there is an error with the Axios request, the error will be thrown.
-*/
-export const getHTML = async (url: string) => {
-  const response = await axios.get(url);
-  return response.data;
-};
-
-/**
-
-Get links from a website sitemap.
-@async
-@function
-@param {string} url - The URL of the website.
-@returns {Promise} A Promise that resolves to an array of unique links from the sitemap.
-*/
-export const getLinksFromSitemap = async (url: string) => {
-  const sitemapUrl = await getSitemap(url);
-  const html = await getHTML(sitemapUrl);
-  const $ = cheerio.load(html);
-  const links: any[] = [];
-  $("loc").each((i: any, link) => {
-    links.push($(link).text());
-  });
-
-  const uniqueLinks = [...new Set(links)];
-  return uniqueLinks;
-};
-
-/**
-
-@function
-@async
-@param {any} html - the HTML source code to extract SEO data from.
-@param {string} url - the URL of the HTML source code.
-@returns {seoData} - an object containing SEO data extracted from the HTML source code.
-@throws {Error} - if an error occurs while processing the HTML source code.
-@typedef {Object} seoData
-@property {string} url - the URL of the HTML source code.
-@property {string} title - the title of the HTML source code.
-@property {string} description - the description of the HTML source code.
-@property {string} canonical - the canonical URL of the HTML source code.
-@property {string} robots - the robots instructions of the HTML source code.
-@property {number} links - the number of links in the HTML source code.
-*/
-export const getSeoDataFromHTML = async (html: any, url: string) => {
-  const $ = cheerio.load(html);
-  const seoData: seoData = {
-    url: url.toString(),
-    title: $("title").text(),
-    description: $("meta[name='description']").attr("content"),
-    canonical: $("link[rel='canonical']").attr("href"),
-    robots: $("meta[name='robots']").attr("content"),
-    links: (await getLinks(url, html)).length,
+    }
   };
 
-  return seoData;
-};
+  /**
+   * Retrieves the sitemap URL of a given URL.
+   * @async
+   * @param {string} url - The URL to retrieve the sitemap URL from.
+   * @returns {Promise<string>} - A Promise that resolves to the sitemap URL.
+   */
+  getSitemap = async (url: string): Promise<string> => {
+    const baseUrl = await this.getBaseUrl(url);
+    const sitemap = `${baseUrl}sitemap.xml`;
+    return sitemap;
+  };
 
-/**
+  /**
+   * Checks if the sitemap URL is valid and the response is 200.
+   * @async
+   * @param {string} url - The sitemap URL to check.
+   * @returns {Promise<boolean>} - A Promise that resolves to true if the sitemap URL is valid and the response is 200, otherwise false.
+   */
+  isSitemap = async (url: string): Promise<boolean> => {
+    try {
+      const sitemapUrl = await this.getSitemap(url);
+      const httpResponse = await this.getResponse(sitemapUrl);
 
-@function
-@async
-@param {string} url - The URL of the webpage to be crawled.
-@param {any} html - The HTML content of the webpage.
-@returns {Array} links - An array of all the links in the HTML.
-This function extracts all the links from an HTML content and adds the hostname to the URL if it's not present.
-The links are returned as an array.
-*/
-export const getLinks = async (url: string, html: any) => {
-  const $ = cheerio.load(html);
-  const links: any[] = [];
-  $("a").each((i: any, link: any) => {
-    const href = $(link).attr("href");
-    const hostname = getHostname(url);
-    const baseUrl = getBaseUrl(url);
-
-    //if the link is not a relative url
-    if (href) {
-      if (href.startsWith(baseUrl)) {
-        links.push(href);
+      if (!httpResponse) {
+        throw new Error(`Invalid response! - ${url}`);
       }
-      //if the link is relative url
-      else if (href.startsWith("/")) {
-        links.push(`${baseUrl}${href}`);
-      }
-    } else {
-      links.push(hostname + "/" + href);
+
+      return httpResponse.response.status === 200;
+    } catch (error) {
+      return false;
     }
-  });
-  return links;
-};
+  };
 
-/**
- * Extracts internal links from the given HTML
- * @param {string} url - The URL of the HTML document
- * @param {any} html - The HTML document as a string or an object
- * @returns {Array} - An array of internal links
- */
-export const getInternalLinks = async (url: string, html: any) => {
-  const baseUrl = getBaseUrl(url);
-  const links = await getLinks(url, html);
-  const internalLinks = links.filter((link) => link.startsWith(baseUrl));
-  //remove duplicates from the array
-  const uniqueLinks = [...new Set(internalLinks)];
-  return uniqueLinks;
-};
+  /**
+   * Retrieves links from a website sitemap.
+   * @async
+   * @function
+   * @param {string} url - The URL of the website.
+   * @returns {Promise<string[]>} - A Promise that resolves to an array of unique links from the sitemap.
+   */
+  getLinksFromSitemap = async (url: string): Promise<string[]> => {
+    const sitemapUrl = await this.getSitemap(url);
+    const response = await this.getResponse(sitemapUrl);
 
-/**
- * Extracts external links from the given HTML
- * @param {string} url - The URL of the HTML document
- * @param {any} html - The HTML document as a string or an object
- * @returns {Array} - An array of external links
- */
-export const getExternalLinks = async (url: string, html: any) => {
-  const links = getLinks(url, html);
-  const externalLinks = (await links).filter(
-    (link: string) => !link.startsWith(url)
-  );
-  return externalLinks;
-};
-
-/**
-
-This function is used to get SEO data from a given URL.
-@function
-@async
-@param {string} url - The URL to retrieve SEO data from.
-@returns {object} seoData - An object containing SEO data including the title, description, and keywords.
-*/
-export const getSeoData = async (url: string) => {
-  if (url) {
-    const html = await getHTML(url);
-    const seoData = getSeoDataFromHTML(html, url);
-    return seoData;
-  }
-};
-
-/**
-
-Generates a sitemap from a given URL and writes it to a file at a specified path
-@param {string} url - The URL to generate the sitemap for
-@param {string} path - The path to write the generated sitemap to
-@returns {Promise<any>} - A promise that resolves to the file that was written to disk.
-*/
-export const sitemapGenerator = async (url: string, path: string) => {
-  const sitemapLinksSet = await xmlSiteMapGenerator.sitemapLinksGenerator(url);
-  const sitemap = await xmlSiteMapGenerator.addLinksToXML(sitemapLinksSet);
-  const file = await xmlSiteMapGenerator.writeSitemap(sitemap, path);
-
-  return file;
-};
-
-/**
-
-Extract images from an HTML page
-@param {string} url - The URL of the HTML page to extract images from
-@returns {Promise<Image[]>} - A promise that resolves to an array of objects representing images in the HTML page. Each object has an alt property representing the alternative text of the image and a src property representing the source URL of the image.
-*/
-export const getImages = async (url: string): Promise<Image[]> => {
-  const images: Image[] = [];
-  const $ = cheerio.load(await getHTML(url));
-
-  $("img").each((i, element) => {
-    const alt = $(element).attr("alt") || "";
-    const src = $(element).attr("src");
-    if (src) {
-      images.push({ alt: alt, src: src });
+    if (!response) {
+      throw new Error(`Invalid response! - ${url}`);
     }
-  });
 
-  return images;
-};
-
-
-/**
-
-Extract headings from an HTML page
-@param {string} url - The URL of the HTML page to extract headings from
-@returns {Promise<Array<{ tag: string, text: string }>>} - A promise that resolves to an array of objects representing headings in the HTML page. Each object has a tag property representing the heading tag (e.g. 'h1', 'h2', etc.) and a text property representing the text content of the heading.
-*/
-export const getHeadings = async (url: string): Promise<Array<{ tag: string, text: string }>> => {
-  const headings: Array<{ tag: string, text: string }> = [];
-  const $ = cheerio.load(await getHTML(url));
-
-  $("h1, h2, h3, h4, h5, h6").each((i, element) => {
-    headings.push({
-      tag: element.name,
-      text: $(element).text(),
+    const responseData = response.response.data;
+    const $ = cheerio.load(responseData);
+    const links: string[] = [];
+    $("loc").each((i: number, link: cheerio.Element) => {
+      links.push($(link).text());
     });
-  });
 
-  return headings;
-};
+    const uniqueLinks = [...new Set(links)];
+    return uniqueLinks;
+  };
 
+  /**
+   * Retrieves SEO data from the HTML source code.
+   * @async
+   * @function
+   * @param {AxiosResponse} response - The Axios response containing the HTML source code.
+   * @param {string} url - The URL of the HTML source code.
+   * @returns {Promise<Metadata>} - A Promise that resolves to an object containing SEO data extracted from the HTML source code.
+   * @throws {Error} - If an error occurs while processing the HTML source code.
+   * @typedef {Object} Metadata
+   */
+  getSeoDataFromResponse = async (
+    response: AxiosResponse,
+    url: string
+  ): Promise<Metadata> => {
+    const $ = cheerio.load(response.data);
+    const seoData: Metadata = {
+      url: url.toString(),
+      title: $("title").text(),
+      description: $("meta[name='description']").attr("content"),
+      canonical: $("link[rel='canonical']").attr("href"),
+      robots: $("meta[name='robots']").attr("content"),
+      links: (await this.getLinks(url, response)).length,
+      status: response.status,
+    };
 
+    return seoData;
+  };
+
+  /**
+   * Retrieves all the links from the HTML content of a webpage.
+   * @async
+   * @function
+   * @param {string} url - The URL of the webpage to be crawled.
+   * @param {AxiosResponse} response - The Axios response containing the HTML content of the webpage.
+   * @returns {Promise<string[]>} - A Promise that resolves to an array of links extracted from the HTML content.
+   * The links are normalized to include the hostname if they are relative URLs.
+   */
+  getLinks = async (
+    url: string,
+    response: AxiosResponse
+  ): Promise<string[]> => {
+    const $ = cheerio.load(response.data);
+    const baseUrl = url;
+
+    const links: string[] = [];
+    $("a").each((i: any, link: any) => {
+      const href = $(link).attr("href");
+      if (href) {
+        // If the link is not a relative URL
+        if (href.startsWith(baseUrl)) {
+          links.push(href);
+        }
+        // If the link is a relative URL
+        else if (href.startsWith("/")) {
+          links.push(`${baseUrl}${href}`);
+        }
+        // Push every remaining link
+        else {
+          links.push(href);
+        }
+      }
+    });
+
+    return links;
+  };
+
+  /**
+   * Extracts internal links from the given HTML document.
+   * @async
+   * @function
+   * @param {HttpResponse} response - The HTTP response containing the HTML document.
+   * @returns {Promise<string[]>} - A Promise that resolves to an array of internal links extracted from the HTML document.
+   */
+  getInternalLinks = async (response: HttpResponse): Promise<string[]> => {
+    const responseURL = new URL(response.responseURL).origin;
+
+    const links = await this.getLinks(responseURL, response.response);
+
+    const internalLinks = links.filter((link) => link.startsWith(responseURL));
+
+    const uniqueLinks = [...new Set(internalLinks)];
+
+    return uniqueLinks;
+  };
+
+  /**
+   * Extracts external links from the given HTML response.
+   * @async
+   * @function
+   * @param {HttpResponse} response - The HTTP response containing the HTML document.
+   * @returns {Promise<string[]>} - A Promise that resolves to an array of external links extracted from the HTML document.
+   */
+  getExternalLinks = async (response: HttpResponse): Promise<string[]> => {
+    const responseURL = new URL(response.responseURL).origin;
+
+    const links = await this.getLinks(responseURL, response.response);
+
+    const externalLinks = links.filter(
+      (link: string) => !link.startsWith(responseURL)
+    );
+
+    return externalLinks;
+  };
+
+  /**
+   * Extracts images from an HTML page.
+   * @async
+   * @function
+   * @param {string} url - The URL of the HTML page to extract images from.
+   * @returns {Promise<Image[]>} - A Promise that resolves to an array of objects representing images in the HTML page. Each object has an `alt` property representing the alternative text of the image and a `src` property representing the source URL of the image.
+   */
+  getImages = async (url: string): Promise<Image[]> => {
+    const response = await this.getResponse(url);
+    const responseData = response?.response.data;
+    const images: Image[] = [];
+    const $ = cheerio.load(responseData);
+
+    $("img").each((i, element) => {
+      const alt = $(element).attr("alt") || "";
+      const src = $(element).attr("src");
+      if (src) {
+        images.push({ alt, src });
+      }
+    });
+
+    return images;
+  };
+
+  /**
+   * Extracts headings from an HTML page.
+   * @async
+   * @function
+   * @param {string} url - The URL of the HTML page to extract headings from.
+   * @returns {Promise<Array<{ tag: string, text: string }>>} - A Promise that resolves to an array of objects representing headings in the HTML page. Each object has a `tag` property representing the heading tag (e.g., 'h1', 'h2', etc.) and a `text` property representing the text content of the heading.
+   */
+  getHeadings = async (
+    url: string
+  ): Promise<Array<{ tag: string; text: string }>> => {
+    const response = await this.getResponse(url);
+    const responseData = response?.response.data;
+    const headings: Array<{ tag: string; text: string }> = [];
+    const $ = cheerio.load(responseData);
+
+    $("h1, h2, h3, h4, h5, h6").each((i, element) => {
+      headings.push({
+        tag: element.name,
+        text: $(element).text(),
+      });
+    });
+
+    return headings;
+  };
+
+  /**
+   * Get the depth of a URL based on its subfolders.
+   * @function
+   * @param {string} url - The URL to get the depth from.
+   * @returns {number} - The number of subfolders in the URL.
+   */
+  getUrlPathDepth = (url_param: string): number => {
+    const url = new URL(url_param);
+
+    let path = url.pathname;
+    if (path.endsWith("/") && path !== "/") {
+      path = path.slice(0, -1);
+    }
+
+    const levels = (path.match(/\//g) || []).length;
+    return levels;
+  };
+}
+
+module.exports = { Utils: Utils };

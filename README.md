@@ -3,12 +3,15 @@
 
 ## Overview 📝
 
-It is a module that crawls sites and extracts basic information on any web page of interest to site owners in general, and SEO specialists in particular, which enables them to use that information in analyzing the efficiency and performance of their site in search engines.
+Spido is a powerful module designed to crawl websites and extract essential information from web pages. It caters to site owners, SEO specialists, and anyone interested in analyzing the efficiency and performance of their website in search engines. By utilizing Spido, users can gain valuable insights that help them optimize their website's visibility and improve its overall ranking on search engine results pages.
 
 ## Features🥁
 
-- Crawling: The module can crawl the entire internal links of any site, and extract SEO information from site pages
-- Fetching: Extracting SEO information from a single web page.
+**Crawling:** Spido's advanced crawler can efficiently traverse all internal links within a website, extracting valuable SEO information from each page. With its robust crawling capabilities, Spido empowers users to gain insights into the overall structure and content of their website.- Fetching: Extracting SEO information from a single web page.
+
+**Fetching:** Extracting SEO information from a single web page is made easy with Spido. Users can retrieve key details and metadata about individual web pages, enabling them to analyze and optimize specific URLs for improved search engine visibility.
+
+**In-Memory Caching:** Spido incorporates an intelligent in-memory caching mechanism that enhances the speed and efficiency of the crawling process. By caching previously visited pages, Spido minimizes redundant requests, resulting in faster performance and reduced load on the target website.
 
 ## Installation 📦
 
@@ -21,68 +24,51 @@ used independently within the CLI.
 
 ### API 📡
 
-Spido can be used as a Node.js module, which can return the SEO information in JSON format.
-
-- fetch: Fetches the SEO information from a single web page.
+Spido can be used as a Node.js module to retrieve SEO information in JSON format. Here's an example of how to use Spido's crawling functionality:
 
 ```
-const spido = require('spido');
-const url = 'https://www.google.com';
-spido.fetch(url, (err, data) => {
-  if (err) {
-    console.log(err);
-  } else {
-    return (data);
-  }
-});
+const Spido = require('spido');
+
+async function getWebsiteMetaData() {
+  const url = "https://www.example.com";
+
+  const crawler = new Spido(url);
+
+  await crawler.crawl();
+
+  return crawler.websiteSeoData;
+}
+
+getWebsiteMetaData()
+  .then(data => {
+    console.log(data);
+  })
+  .catch(error => {
+    console.error(error);
+  });
 ```
 
-- crawl: Crawls the entire internal links of any site, and extract SEO information from site pages.
+### CLI 💻 (Upcoming Release)
 
-```
-const spido = require('spido');
-const url = 'https://www.google.com';
-spido.crawl(url, (err, data) => {
-  if (err) {
-    console.log(err);
-  } else {
-    return (data);
-  }
-});
-```
+Spido offers a command-line interface (CLI) that allows you to fetch and crawl websites, providing SEO information directly on the console.
 
-more information about spido API's can be found in [API's Documentation](docs/usage/1-api.md).
+**Note: The CLI functionality is currently being enhanced and will be available in the next version.**
 
-### CLI 💻
+Stay tuned for the upcoming release, which will introduce new commands and better interface
 
-spido can be used as a command line tool, which can return the SEO information and print it on the console.
+We appreciate your patience as we work on delivering an enhanced CLI experience for Spido. Stay tuned for the release announcement!
 
-- fetch: `spido fetch <url>`
+## New Features 🆕
 
-```
-$ spido fetch https://www.example.com
-```
+### v1.5.0:
 
-- crawl: `spido crawl <url>`
-
-```
-$ spido crawl https://www.example.com
-```
-
-more information about spido CLI can be found in [CLI Documentation](docs/usage/2-cli.md).
-
-## New Features 🐛
-
-### v1.4.3:
-
-- images now can be extracted from html pages with utils getImages(url).
-- heading tags can now be extracted from html pages with getHeadings(url).
-- JsDoc added to all utils functions, it should be easier now for developers to understand how features / functions would works
+- In-Memory Cache: Spido now includes an in-memory cache to improve performance by caching previously crawled pages.
+- Enhanced Types: Spido now offers better type definitions, providing improved type safety and developer experience.
+- Significant Speed Improvements: With the latest optimizations, Spido now offers faster crawling and fetching capabilities, allowing for quicker analysis of website SEO.
 
 ## Credits
 
 - [@Yazan-Zoghbi](https://github.com/yazan-zoghbi)- original author
-- [@karam-mustafa](https://github.com/karam-mustafa) - organization maintainer
 - [@Yamanlk](https://github.com/Yamanlk) - cli contributor
 
 ## Links 🔗
